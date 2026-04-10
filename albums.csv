@@ -1,14 +1,17 @@
-album,track_count,spotify_mau,hype_score,days_to_release,event_type,first_week_streams
-Divide,16,120,9,21,0,375
-Scorpion,25,207,9,7,1,559
-Astroworld,17,207,9,14,0,350
-AfterHours,14,299,9,21,0,450
-Justice,16,406,8,14,0,252
-Midnights,20,489,10,21,0,776
-SOS,23,489,9,21,0,400
-Utopia,19,574,8,14,0,455
-1989TV,21,574,9,21,0,600
-TTPD,31,640,10,28,0,1173
-HUT,22,640,10,21,0,580
-ShortNSweet,12,640,8,21,0,450
-GNX,12,640,10,7,1,363
+artist,album,track_count,spotify_mau,hype_score,days_to_release,event_type,first_week_streams
+Ed Sheeran,Divide,16,120,9,21,0,375
+Drake,Scorpion,25,207,9,7,0,559
+Drake,CLB,21,365,9.5,14,0,512
+Travis Scott,ASTROWORLD,17,207,9,14,0,350
+Travis Scott,Utopia,19,574,8,14,0,455
+The Weeknd,AfterHours,14,299,9,21,0,450
+The Weeknd,HUT,22,640,10,21,0,580
+Justin Bieber,Justice,16,406,8,14,0,252
+SZA,SOS,23,489,9,21,0,400
+Taylor Swift,Midnights,20,489,10,21,0,776
+Taylor Swift,1989TV,21,574,9,21,0,600
+Taylor Swift,TTPD,31,640,10,28,0,1173
+Sabrina Carpenter,ShortNSweet,12,640,8,21,0,450
+Kendrick Lamar,GNX,12,640,10,7,1,363
+Ariana Grande,EternalSunshine,13,620,9,28,0,230
+Lana Del Rey,OceanBlvd,16,574,8,21,0,120
