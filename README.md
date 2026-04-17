@@ -1,25 +1,27 @@
-# Spotify First-Week Streaming Predictor
-### Data-Driven Forecasting for High-Anticipation Album Releases
+# Data-Driven Forecasting for High-Anticipation Album Releases
 
 ## Project Overview
-This repository contains a machine learning model designed to forecast **first-week streaming performance** for major album releases. By moving beyond manual speculation, the project utilizes a `RandomForestRegressor` to analyze the intersection of market growth, artist hype, and historical streaming behavior to provide quantitative, data-backed projections.
+This repository contains a machine learning framework designed to forecast **first-week streaming performance** for major album releases. By moving beyond manual speculation, the project utilizes a `RandomForestRegressor` to analyze the intersection of market growth, artist hype, and historical streaming behavior to provide quantitative, data-backed projections.
 
 ## 2026 Case Study: The "Summer of Titans"
-As of April 2026, the model is currently focused on the highly anticipated release cycle featuring three industry heavyweights:
-- **Drake – *Iceman*:** Analyzing his bid to reclaim hip-hop supremacy following recent cryptic teasers and a dominant start to the 2026 streaming year.
-- **Ariana Grande – *AG8*:** Forecasting her return to pop dominance based on recent studio confirmations and summer tour synergy.
-- **Lana Del Rey – *Stove*:** Predicting the commercial impact of her pivot into country music, factoring in her transition to a "High-Engagement" streaming tier.
+As of April 2026, the model is focused on the highly anticipated release cycle featuring three industry heavyweights:
+* **Drake — *Iceman*:** Analyzing his bid to reclaim hip-hop supremacy following a dominant start to the 2026 streaming year.
+* **Olivia Rodrigo — *OR3*:** Forecasting her "Efficiency King" status and whether her high Streams-Per-Track (SPT) ratio can break records with the 2026 MAU surge.
+* **Ariana Grande — *AG8*:** Predicting the commercial impact of her return to pop dominance factoring in recent studio confirmations.
 
 ## Data & Methodology
-- **The Feature Set:** The model processes `albums.csv`, aggregating key performance indicators (KPIs) such as:
-    - **Track Count:** The total number of unique assets available for streaming.
-    - **Spotify MAU:** Global Monthly Active Users (currently adjusted to the 2026 benchmark of **751M**).
-    - **Hype Score:** A weighted variable (1.0–10.0) quantifying social sentiment and promotional intensity.
-    - **Rollout Duration:** The length of the marketing campaign prior to release.
-- **Analysis:** By utilizing a **Random Forest** algorithm, the model identifies non-linear relationships between market size and track volume, identifying the streaming "ceiling" for different artist tiers.
-- **Goal:** To provide a reliable, data-driven baseline for the commercial impact of major releases in an era of massive market expansion.
 
-## How to Run
-1. **Clone this repository:**
-   ```bash
-   git clone [https://github.com/john15young/Spotify-First-Week-Streaming-Predictor.git](https://github.com/john15young/Spotify-First-Week-Streaming-Predictor.git)
+### **The Feature Set ($X$)**
+The model processes `streaming_data_final.csv`, aggregating key performance indicators (KPIs) including:
+* **Track Count:** Total songs available for streaming (influencing volume vs. efficiency).
+* **Spotify MAU:** Global Monthly Active Users (adjusted to the 2026 benchmark of **751M**).
+* **Hype Score:** A weighted variable (1.0–10.0) quantifying social sentiment and promotional intensity.
+* **Days to Release:** The length of the marketing rollout.
+* **Event Type:** A binary toggle for standard vs. "surprise" or "event-style" releases.
+* **Feature Track Count:** The volume of high-profile collaborations on the project.
+
+### **The Machine Learning Model**
+The system utilizes a **Random Forest** algorithm, which identifies non-linear relationships between market size and track volume. It employs an ensemble of 100 decision trees to average out predictions, identifying the streaming "ceiling" for different artist tiers while accounting for "Streaming Inflation" caused by Spotify's global user growth.
+
+### **Goal**
+To provide a reliable, data-driven baseline for the commercial impact of major releases in an era of massive market expansion.
