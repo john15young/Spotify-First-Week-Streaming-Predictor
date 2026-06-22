@@ -26,13 +26,15 @@ st.markdown(f"""
     }}
     div[data-testid="stMetricValue"] {{ color: {SPOTIFY_GREEN}; }}
 
-    /* Input section card panel */
-    .input-card {{
+    /* Hide Streamlit anchor links on headings */
+    h1 a, h2 a, h3 a {{ display: none !important; }}
+
+    /* Input column card styling via column container */
+    div[data-testid="column"]:first-child {{
         background: #13161d;
         border: 1px solid #22262f;
         border-radius: 14px;
         padding: 22px 24px 18px 24px;
-        margin-bottom: 16px;
     }}
 
     /* Prediction result card */
@@ -318,20 +320,50 @@ with header_r:
 
 st.markdown(f"""
 <div style="background:{SPOTIFY_GREEN}18; border-left:3px solid {SPOTIFY_GREEN}; border-radius:6px; padding:14px 18px; margin-bottom:18px;">
-<b>Welcome!</b> This tool uses a machine learning model trained on 49 major album releases (2015 to 2026)
+<b>Welcome!</b> This application uses a machine learning model trained on 49 major album releases (2015 to 2026)
 to predict how many streams an announced album will rack up in its first week on Spotify, globally.
 <br><br>
-<b>How to use it:</b> Select an artist from the dropdown (or enter a new one), fill in a few details
-about the upcoming album, then hit <b>Predict</b>. The model will instantly give you a stream estimate
-along with a confidence range. Artist streaming history is auto-filled from the training data, so you
-only need to supply the album-specific details.
+<b>How to use it:</b> Select an artist from the dropdown, fill in a few details about the upcoming album,
+then hit <b>Predict</b>. The model will instantly give you a stream estimate along with a confidence range.
+Artist streaming history is auto-filled from the training data, so you only need to supply the album-specific details.
 <br><br>
 <span style="color:#b3b3b3; font-size:13px;">⚠️ Best suited for major, established artists with a track record on Spotify.
-Predictions for debut or emerging artists will be less reliable.</span>
+This model is periodically refined, updated, and improved as new album data becomes available.</span>
 </div>
 """, unsafe_allow_html=True)
 
 artists = sorted(df['artist'].unique().tolist())
+
+# Recent validated predictions
+st.markdown(f"""
+<div style="margin-bottom: 6px;">
+    <p style="font-size:13px; color:#b3b3b3; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">
+        Recent validated predictions
+    </p>
+    <div style="display:flex; gap:12px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:200px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
+            <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Drake — Iceman 🧊</div>
+            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">480M</span>
+                <span style="font-size:13px; color:#b3b3b3;">predicted</span>
+                <span style="font-size:22px; font-weight:700; color:#fff;">455.3M</span>
+                <span style="font-size:13px; color:#b3b3b3;">actual</span>
+            </div>
+            <div style="font-size:12px; color:#4ade80; margin-top:4px;">+5.4% off &nbsp;✓</div>
+        </div>
+        <div style="flex:1; min-width:200px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
+            <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Olivia Rodrigo — you seem pretty sad... 💜</div>
+            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+                <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">416M</span>
+                <span style="font-size:13px; color:#b3b3b3;">predicted</span>
+                <span style="font-size:22px; font-weight:700; color:#fff;">394.7M</span>
+                <span style="font-size:13px; color:#b3b3b3;">actual</span>
+            </div>
+            <div style="font-size:12px; color:#4ade80; margin-top:4px;">+5.4% off &nbsp;✓</div>
+        </div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 st.markdown("""
 <div class="section-divider">
@@ -408,22 +440,15 @@ with st.sidebar:
 left_col, right_col = st.columns([0.55, 0.45], gap="large")
 
 with left_col:
-    st.markdown("<div class='input-card'>", unsafe_allow_html=True)
-    st.subheader("Album details")
+    st.markdown(f"<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Album details</p>", unsafe_allow_html=True)
 
-    artist_choice = st.selectbox("Artist", artists + ["+ New artist"])
-    is_new = artist_choice == "+ New artist"
-
-    if is_new:
-        artist_name = st.text_input("Artist name")
-    else:
-        artist_name = artist_choice
-        st.markdown(
-            f"<div style='background:{SPOTIFY_GREEN}; border-radius:6px; padding:8px 14px; "
-            f"margin-bottom:12px; color:#0e1117; font-weight:600; font-size:15px;'>"
-            f"🎵 {artist_name}</div>",
-            unsafe_allow_html=True
-        )
+    artist_name = st.selectbox("Artist", artists)
+    st.markdown(
+        f"<div style='background:{SPOTIFY_GREEN}; border-radius:6px; padding:8px 14px; "
+        f"margin-bottom:12px; color:#0e1117; font-weight:600; font-size:15px;'>"
+        f"🎵 {artist_name}</div>",
+        unsafe_allow_html=True
+    )
 
     track_count = st.number_input(
         "Track count",
@@ -447,29 +472,22 @@ with left_col:
 
     is_household = st.toggle(
         "Household-name artist",
-        value=True if not is_new else False,
+        value=True,
         help="Is this artist a globally recognized name? Think Taylor Swift, Drake, Eminem. Turn off for artists who are big within a genre but not yet mainstream crossover.")
 
-    # Years since last album
-    if is_new:
-        years_since_last = st.number_input("Years since last album (0 if debut)", min_value=0, value=2, step=1)
-    else:
-        a = df[df['artist'] == artist_name].sort_values('year')
-        most_recent_year = int(a.iloc[-1]['year']) if len(a) else None
-        if artist_name in REFERENCE_HISTORY:
-            ref_year = REFERENCE_HISTORY[artist_name]['year']
-            if most_recent_year is None or ref_year > most_recent_year:
-                most_recent_year = ref_year
-        years_since_last = int(2026 - most_recent_year) if most_recent_year else 0
-        st.caption(f"Years since last album (auto): {years_since_last}")
+    # Years since last album (auto from CSV)
+    a = df[df['artist'] == artist_name].sort_values('year')
+    most_recent_year = int(a.iloc[-1]['year']) if len(a) else None
+    if artist_name in REFERENCE_HISTORY:
+        ref_year = REFERENCE_HISTORY[artist_name]['year']
+        if most_recent_year is None or ref_year > most_recent_year:
+            most_recent_year = ref_year
+    years_since_last = int(2026 - most_recent_year) if most_recent_year else 0
+    st.caption(f"Years since last album (auto): {years_since_last}")
 
     # Auto-filled history fields
-    hist = artist_history(artist_name, mau) if artist_name and not is_new else (
-        {'prev_streams_per_mau': gm / mau, 'trailing_avg_per_mau': gm / mau,
-         'trailing_spt_per_mau': gm_spt / mau, 'is_household_name': int(is_household)}
-    )
-    if not is_new:
-        hist['is_household_name'] = int(is_household)
+    hist = artist_history(artist_name, mau)
+    hist['is_household_name'] = int(is_household)
 
     with st.expander("Auto-filled from artist history (dataset medians used if no history)"):
         st.write(f"Previous release first-week streams: **{hist['prev_streams_per_mau'] * mau:.0f}M**")
@@ -477,10 +495,9 @@ with left_col:
         st.write(f"Trailing streams per track: **{hist['trailing_spt_per_mau'] * mau:.1f}M**")
 
     predict_clicked = st.button("Predict first-week streams", type="primary", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
 with right_col:
-    st.subheader("Prediction")
+    st.markdown(f"<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Prediction</p>", unsafe_allow_html=True)
     if predict_clicked:
         if not artist_name:
             st.error("Enter an artist name.")
@@ -499,7 +516,7 @@ with right_col:
                 <div style="color:#b3b3b3; font-size:14px; margin-bottom:4px;">Predicted first-week global streams</div>
                 <div style="color:{SPOTIFY_GREEN}; font-size:44px; font-weight:700; line-height:1.1;">{pred:.0f}M</div>
                 <div style="color:#b3b3b3; font-size:14px; margin-top:10px;">
-                    Confidence range (±{mape:.0f}% MAPE): {pred * (1 - mape / 100):.0f}M – {pred * (1 + mape / 100):.0f}M
+                    Confidence range (±{mape:.0f}% MAPE): {pred * (1 - mape / 100):.0f}M to {pred * (1 + mape / 100):.0f}M
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -514,8 +531,26 @@ with right_col:
                 f"The model expects **{artist_name}**'s album to stream around **{pred:.0f}M** times "
                 f"globally in its first week, roughly **{pred / track_count:.1f}M per track**. "
                 f"Based on the model's historical accuracy (plus or minus {mape:.0f}%), a realistic range is "
-                f"**{lo_fmt} to {hi_fmt}**. "
-                f"Your prediction is session only and won't affect the model."
+                f"**{lo_fmt} to {hi_fmt}**."
+            )
+            st.markdown("")
+            st.caption("Your prediction is session only and won't affect the model.")
+
+            # Share on X/Twitter
+            share_text = (
+                f"I used the Spotify First-Week Global Streaming Predictor to estimate "
+                f"{artist_name}'s upcoming album will hit {pred:.0f}M streams in week 1 "
+                f"(range: {lo_fmt} to {hi_fmt}). "
+                f"Check it out: spotify-first-week-streaming-predictor.streamlit.app"
+            )
+            import urllib.parse
+            tweet_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(share_text)}"
+            st.markdown(
+                f'<a href="{tweet_url}" target="_blank" style="display:inline-block; margin-top:10px; '
+                f'background:#000; color:#fff; padding:8px 18px; border-radius:20px; '
+                f'font-weight:600; font-size:13px; text-decoration:none; border:1px solid #333;">'
+                f'Share on X &nbsp;𝕏</a>',
+                unsafe_allow_html=True
             )
     else:
         st.info("Fill in album details and click **Predict first-week streams** to see results here.")
@@ -529,3 +564,4 @@ st.markdown(f"""
     <span>±{state['mape']:.0f}% avg. error</span>
 </div>
 """, unsafe_allow_html=True)
+
