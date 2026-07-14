@@ -5,6 +5,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import r2_score
 import io, warnings
+from datetime import date
 warnings.filterwarnings("ignore", category=UserWarning)
 
 st.set_page_config(page_title="Spotify First-Week Streaming Predictor", layout="wide", page_icon="🎧")
@@ -137,8 +138,7 @@ Beyonce,CowboyCarter,2024,4,27,640,9.5,14,0,11,2,173,316,1
 Dua Lipa,FutureNostalgia,2020,0,13,299,8.5,21,0,2,4,0,294,0
 Dua Lipa,RadicalOptimism,2024,0,11,640,7.5,45,0,0,4,294,94,0
 Adele,30,2021,0,12,365,10.0,45,0,0,6,0,310,1
-Bad Bunny,UltimoTourDelMundo,2020,3,16,299,9.5,3,0,0,0,0,274,1
-Bad Bunny,UnVeranoSinTi,2022,3,23,489,10.0,7,0,8,1,274,503,1
+Bad Bunny,UnVeranoSinTi,2022,3,23,489,10.0,7,0,8,1,0,503,1
 Bad Bunny,NadieSabe,2023,3,22,574,9.5,3,0,8,1,503,469,1
 Harry Styles,FineLine,2019,0,12,248,9.0,40,0,0,0,0,155,1
 Harry Styles,HarrysHouse,2022,0,13,489,9.5,52,0,0,2,155,440,1
@@ -319,20 +319,30 @@ st.markdown(
 )
 
 st.markdown(f"""
-<div style="background:{SPOTIFY_GREEN}18; border-left:3px solid {SPOTIFY_GREEN}; border-radius:6px; padding:14px 18px; margin-bottom:18px;">
-<b>Welcome!</b> This application uses a machine learning model trained on 49 major album releases (2015 to 2026)
-to predict how many streams an announced album will rack up in its first week on Spotify, globally.
-<br><br>
-<b>How to use it:</b> Select an artist from the dropdown, fill in a few details about the upcoming album,
-then hit <b>Predict</b>. The model will instantly give you a stream estimate along with a confidence range.
-Artist streaming history is auto-filled from the training data, so you only need to supply the album-specific details.
-<br><br>
-<span style="color:#b3b3b3; font-size:13px;">⚠️ Best suited for major, established artists with a track record on Spotify.
-The prediction engine is actively being improved — upcoming updates include expanded historical data, additional artists across more genres, and refined modeling techniques.</span>
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;">
+    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:22px; margin-bottom:8px;">📊</div>
+        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">What it does</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for announced major album releases, using a machine learning model trained on 49 albums (2015 to 2026).</p>
+    </div>
+    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:22px; margin-bottom:8px;">🎯</div>
+        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">How to use it</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, fill in a few album details, and hit Predict. Artist streaming history is auto-filled — you only need to supply the album-specific inputs like track count and hype score.</p>
+    </div>
+    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:22px; margin-bottom:8px;">🔧</div>
+        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">The prediction engine is actively being improved — upcoming updates include expanded historical data, additional artists across more genres, and refined modeling techniques.</p>
+    </div>
 </div>
+<p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
 """, unsafe_allow_html=True)
 
 artists = sorted(df['artist'].unique().tolist())
+
+_ariana_release = date(2026, 7, 31)
+_days_to_ariana = (_ariana_release - date.today()).days
 
 # Recent predictions
 st.markdown(f"""
@@ -343,50 +353,41 @@ st.markdown(f"""
     <div style="display:flex; gap:12px; flex-wrap:wrap;">
         <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
             <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Drake — Iceman 🧊</div>
-            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">479M</span>
-                <span style="font-size:13px; color:#b3b3b3;">predicted</span>
+                <span style="font-size:11px; color:#666;">predicted</span>
+                <span style="color:#333; font-size:16px;">|</span>
                 <span style="font-size:22px; font-weight:700; color:#fff;">450.4M</span>
-                <span style="font-size:13px; color:#b3b3b3;">actual</span>
+                <span style="font-size:11px; color:#666;">actual</span>
             </div>
             <div style="font-size:12px; color:#4ade80; margin-top:4px;">+6.4% off &nbsp;✓</div>
         </div>
         <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
             <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Olivia Rodrigo — you seem pretty sad... 💜</div>
-            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">413M</span>
-                <span style="font-size:13px; color:#b3b3b3;">predicted</span>
+                <span style="font-size:11px; color:#666;">predicted</span>
+                <span style="color:#333; font-size:16px;">|</span>
                 <span style="font-size:22px; font-weight:700; color:#fff;">394.7M</span>
-                <span style="font-size:13px; color:#b3b3b3;">actual</span>
+                <span style="font-size:11px; color:#666;">actual</span>
             </div>
             <div style="font-size:12px; color:#4ade80; margin-top:4px;">+4.7% off &nbsp;✓</div>
         </div>
-        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #1db95444; border-radius:12px; padding:14px 18px; position:relative;">
+        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #1db95444; border-radius:12px; padding:14px 18px;">
             <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
                 <span style="font-size:12px; color:#b3b3b3;">Ariana Grande — Petal 🌺</span>
                 <span style="display:inline-flex; align-items:center; gap:4px; background:#1db95422; border:1px solid {SPOTIFY_GREEN}; border-radius:20px; padding:1px 7px; font-size:10px; color:{SPOTIFY_GREEN}; font-weight:600;">
                     <span style="width:6px; height:6px; border-radius:50%; background:{SPOTIFY_GREEN}; display:inline-block; animation:pulse 1.5s infinite;"></span>
-                    LIVE PREDICTION
+                    LIVE
                 </span>
             </div>
             <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
                 <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">408M</span>
                 <span style="font-size:13px; color:#b3b3b3;">predicted</span>
             </div>
-            <div style="font-size:12px; color:#b3b3b3; margin-top:4px;">Releasing July 31, 2026 — actual TBD</div>
-        </div>
-        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #1db95444; border-radius:12px; padding:14px 18px;">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <span style="font-size:12px; color:#b3b3b3;">Madonna — Confessions II 💿</span>
-                <span style="display:inline-flex; align-items:center; gap:4px; background:#1db95422; border:1px solid {SPOTIFY_GREEN}; border-radius:20px; padding:1px 7px; font-size:10px; color:{SPOTIFY_GREEN}; font-weight:600;">
-                    <span style="width:6px; height:6px; border-radius:50%; background:{SPOTIFY_GREEN}; display:inline-block;"></span>
-                    LIVE PREDICTION
-                </span>
+            <div style="font-size:12px; color:#b3b3b3; margin-top:4px;">
+                {"Releasing in " + str(_days_to_ariana) + " days (Jul 31, 2026)" if _days_to_ariana > 0 else "Released — actual pending"}
             </div>
-            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
-                <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">TBD</span>
-            </div>
-            <div style="font-size:12px; color:#b3b3b3; margin-top:4px;">Releasing July 3, 2026 — prediction coming soon</div>
         </div>
     </div>
 </div>
@@ -482,12 +483,22 @@ with left_col:
     st.markdown(f"<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Album details</p>", unsafe_allow_html=True)
 
     artist_name = st.selectbox("Artist", artists)
-    st.markdown(
-        f"<div style='background:{SPOTIFY_GREEN}; border-radius:6px; padding:8px 14px; "
-        f"margin-bottom:12px; color:#0e1117; font-weight:600; font-size:15px;'>"
-        f"🎵 {artist_name}</div>",
-        unsafe_allow_html=True
-    )
+
+    # Last album quick stat instead of plain green bar
+    a_hist = df[df['artist'] == artist_name].sort_values('year')
+    if len(a_hist) > 0:
+        last = a_hist.iloc[-1]
+        st.markdown(
+            f"<div style='background:#13161d; border:1px solid #1db95444; border-radius:6px; padding:8px 14px; "
+            f"margin-bottom:12px; font-size:13px;'>"
+            f"<span style='color:{SPOTIFY_GREEN}; font-weight:600;'>Last album:</span> "
+            f"<span style='color:#fff;'>{last['album']}</span>"
+            f"<span style='color:#b3b3b3;'> — {int(last['first_week_streams'])}M first-week streams ({int(last['year'])})</span>"
+            f"</div>",
+            unsafe_allow_html=True
+        )
+
+    album_name = st.text_input("Album name (optional)", placeholder="e.g. Midnight Rain", help="Optional. If provided, your share tweet will include the album name.")
 
     track_count = st.number_input(
         "Track count",
@@ -549,9 +560,22 @@ with right_col:
             ]
             pred, lo, hi = predict(params, mau)
             mape = state['mape']
+            daily_avg = pred / 7
+
+            # Confidence color coding
+            has_history = len(df[df['artist'] == artist_name]) > 1
+            if not has_history:
+                card_border = "#f59e0b"
+                conf_note = "⚠️ Lower confidence — limited artist history in dataset"
+            elif hype_score < 6:
+                card_border = "#f59e0b"
+                conf_note = "⚠️ Lower confidence — low hype score increases uncertainty"
+            else:
+                card_border = SPOTIFY_GREEN
+                conf_note = None
 
             st.markdown(f"""
-            <div class="result-card">
+            <div class="result-card" style="border-color:{card_border};">
                 <div style="color:#b3b3b3; font-size:14px; margin-bottom:4px;">Predicted first-week global streams</div>
                 <div style="color:{SPOTIFY_GREEN}; font-size:44px; font-weight:700; line-height:1.1;">{pred:.0f}M</div>
                 <div style="color:#b3b3b3; font-size:14px; margin-top:10px;">
@@ -559,6 +583,9 @@ with right_col:
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+            if conf_note:
+                st.warning(conf_note)
 
             c1, c2 = st.columns(2)
             c1.metric("Streams per track", f"{pred / track_count:.1f}M",
@@ -568,19 +595,25 @@ with right_col:
 
             lo_fmt = f"{pred * (1 - mape / 100):.0f}M"
             hi_fmt = f"{pred * (1 + mape / 100):.0f}M"
+            album_label = f" ({album_name})" if album_name else ""
             st.markdown(
-                f"The model expects **{artist_name}**'s album to stream around **{pred:.0f}M** times "
-                f"globally in its first week, roughly **{pred / track_count:.1f}M per track**. "
+                f"The model expects **{artist_name}**{album_label}'s album to stream around **{pred:.0f}M** times "
+                f"globally in its first week — an average of **{daily_avg:.1f}M streams per day**. "
+                f"That works out to roughly **{pred / track_count:.1f}M per track**. "
                 f"Based on the model's historical accuracy (plus or minus {mape:.0f}%), a realistic range is "
                 f"**{lo_fmt} to {hi_fmt}**."
             )
             st.markdown("")
             st.caption("Your prediction is session only and won't affect the model.")
 
+            # Benchmark context
+            st.caption("For reference: Drake's Iceman did 450M in its first week. Olivia Rodrigo's album did 395M.")
+
             # Share on X/Twitter
+            album_share = f"'s {album_name}" if album_name else "'s upcoming album"
             share_text = (
                 f"I used the Spotify First-Week Global Streaming Predictor to estimate "
-                f"{artist_name}'s upcoming album will hit {pred:.0f}M streams in week 1 "
+                f"{artist_name}{album_share} will hit {pred:.0f}M streams in week 1 "
                 f"(range: {lo_fmt} to {hi_fmt}). "
                 f"Check it out: spotify-first-week-streaming-predictor.streamlit.app"
             )
@@ -594,7 +627,13 @@ with right_col:
                 unsafe_allow_html=True
             )
     else:
-        st.info("Fill in album details and click **Predict first-week streams** to see results here.")
+        st.markdown(f"""
+        <div style="background:#13161d; border:1px solid #22262f; border-radius:14px; padding:24px 28px; color:#b3b3b3; font-size:14px; line-height:1.7;">
+            <div style="font-size:32px; margin-bottom:12px;">🎵</div>
+            Fill in the album details on the left and hit <strong style="color:#fff;">Predict first-week streams</strong> to see your estimate here.<br><br>
+            <span style="font-size:12px; color:#555;">The model will return a predicted stream count, a confidence range, and a plain-English breakdown of what the numbers mean.</span>
+        </div>
+        """, unsafe_allow_html=True)
 
 st.markdown(f"""
 <div class="app-footer">
@@ -602,7 +641,8 @@ st.markdown(f"""
     <span>Random Forest model</span> &nbsp;·&nbsp;
     49 training albums (2015 to 2026) &nbsp;·&nbsp;
     Validated on unseen releases &nbsp;·&nbsp;
-    <span>±{state['mape']:.0f}% avg. error</span>
+    <span>±{state['mape']:.0f}% avg. error</span> &nbsp;·&nbsp;
+    Last updated June 2026
 </div>
 """, unsafe_allow_html=True)
 
