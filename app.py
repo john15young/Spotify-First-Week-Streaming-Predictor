@@ -20,6 +20,10 @@ SPOTIFY_GREEN = "#1DB954"
 # NOTE: plain (non-f) string so CSS braces don't need escaping.
 st.markdown("""
 <style>
+    /* Montserrat is geometric and close in spirit to Spotify's own Circular, so the title
+       reads as a display face without clashing with Streamlit's body font. */
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap');
+
     /* Base */
     .stApp { background-color: #0e1117; }
 
@@ -39,17 +43,23 @@ st.markdown("""
     /* Hide Streamlit anchor links on headings */
     h1 a, h2 a, h3 a { display: none !important; }
 
-    /* Page title */
-    .app-title {
-        font-size: 3.1rem;
-        font-weight: 800;
-        line-height: 1.12;
-        letter-spacing: -0.015em;
-        margin: 0 0 1.4rem 0;
-        color: #ffffff;
+    /* Page title. clamp() scales it with the viewport, so it is big on a desktop and still
+       fits a phone without a separate media query. Streamlit ships its own h1 rule with
+       higher specificity, so this needs the element selector and !important to win. */
+    .stApp h1.app-title, h1.app-title {
+        font-family: 'Montserrat', 'Source Sans Pro', -apple-system, sans-serif !important;
+        font-size: clamp(2.1rem, 4.7vw, 4.5rem) !important;
+        font-weight: 900 !important;
+        line-height: 1.06 !important;
+        letter-spacing: -0.03em !important;
+        margin: 0 0 1.5rem 0 !important;
+        padding: 0 !important;
+        color: #ffffff !important;
     }
-    @media (max-width: 900px) {
-        .app-title { font-size: 2.1rem; }
+    .stApp h1.app-title .title-icon {
+        font-weight: 400 !important;
+        letter-spacing: 0 !important;
+        margin-right: 0.1em;
     }
 
     /* Recent prediction cards */
@@ -71,19 +81,21 @@ st.markdown("""
         min-width: 0;
     }
     .pred-card-title {
-        font-size: 13.5px;
+        font-size: 14.5px;
         font-weight: 600;
         color: #ffffff;
         line-height: 1.45;
-        margin-bottom: 12px;
+        margin-bottom: 14px;
+        /* Two lines reserved so the number rows line up across all three cards; a longer
+           title simply grows past it rather than being clipped. */
         min-height: 2.9em;
         overflow-wrap: anywhere;
     }
-    .pred-row { display: flex; align-items: stretch; gap: 16px; }
-    .pred-num { font-size: 25px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
-    .pred-lbl { font-size: 11px; color: #777f8c; margin-top: 3px; white-space: nowrap; }
+    .pred-row { display: flex; align-items: stretch; gap: 18px; }
+    .pred-num { font-size: 34px; font-weight: 800; line-height: 1.08; white-space: nowrap; }
+    .pred-lbl { font-size: 12.5px; color: #777f8c; margin-top: 5px; white-space: nowrap; }
     .pred-sep { width: 1px; background: #2a2e37; flex: 0 0 1px; }
-    .pred-badge { margin-top: auto; padding-top: 12px; font-size: 12.5px; font-weight: 600; }
+    .pred-badge { margin-top: auto; padding-top: 14px; font-size: 15px; font-weight: 700; }
 
     /* Prediction result card */
     .result-card {
@@ -242,10 +254,10 @@ MAU_BY_PERIOD = {
     "2023": 574,
     "2024": 640,
     "2025": 715,
-    "2026 H1": 761,
-    "2026 H2": 788,
+    "2026 (Jan to Jun)": 761,
+    "2026 (Jul to Dec)": 788,
 }
-DEFAULT_PERIOD = "2026 H2"
+DEFAULT_PERIOD = "2026 (Jul to Dec)"
 DEFAULT_MAU = MAU_BY_PERIOD[DEFAULT_PERIOD]
 MAU_SOURCE_NOTE = (
     "Spotify put its monthly active users at 788 million in its Q3 2026 earnings report. "
@@ -364,7 +376,8 @@ REFERENCE_HISTORY = {
 # Recent public predictions, checked against the real first-week numbers.
 RECENT_PREDICTIONS = [
     {"artist": "Drake", "album": "Iceman", "pred": 479, "actual": 450.4},
-    {"artist": "Olivia Rodrigo", "album": "you seem pretty sad...", "pred": 413, "actual": 394.7},
+    {"artist": "Olivia Rodrigo", "album": "you seem pretty sad for a girl so in love",
+     "pred": 413, "actual": 394.7},
     {"artist": "Ariana Grande", "album": "Petal", "pred": 408, "actual": 236.1},
 ]
 
@@ -532,8 +545,8 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
 # UI
 # =============================================================================
 st.markdown(
-    "<h1 class='app-title'>🎧 Spotify First-Week Global Streaming Predictor "
-    "for Major Album Releases</h1>",
+    "<h1 class='app-title'><span class='title-icon'>🎧</span> Spotify First-Week Global "
+    "Streaming Predictor for Major Album Releases</h1>",
     unsafe_allow_html=True
 )
 
@@ -642,7 +655,7 @@ prediction_slot = st.container()
 # -----------------------------------------------------------------------------
 # Album details (full width)
 # -----------------------------------------------------------------------------
-st.markdown("<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Album details</p>",
+st.markdown("<p style='font-size:24px; font-weight:700; margin:38px 0 18px 0;'>Album Details</p>",
             unsafe_allow_html=True)
 
 a_col, name_col = st.columns(2)
@@ -673,7 +686,7 @@ with m_col:
              "not reported yet.")
 
 release_year = int(release_period.split()[0])
-mau_basis = f"{mau}M MAU ({release_period})"
+mau_basis = f"{mau}M MAU, {release_period}"
 if mau != MAU_BY_PERIOD[release_period]:
     st.caption(f"Using a manual override of {mau}M. {release_period} reported "
                f"{MAU_BY_PERIOD[release_period]}M.")
