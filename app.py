@@ -312,6 +312,10 @@ def load_and_train():
     r2 = r2_score(la, lp)
     rp = np.exp(np.array(lp)) * train['spotify_mau'].values
     ra = train['first_week_streams'].values
+    # Same cross-validated predictions scored on the raw stream scale instead of in log
+    # space. It comes out much lower because a handful of outsized albums dominate the
+    # spread, so both numbers are reported rather than only the flattering one.
+    r2_real = r2_score(ra, rp)
     mape = np.mean(np.abs(rp - ra) / ra * 100)
     mae = np.mean(np.abs(rp - ra))
 
@@ -342,7 +346,7 @@ def load_and_train():
 
     return {
         'df': df, 'model': model, 'gm': gm, 'gm_spt': gm_spt,
-        'r2': r2, 'mape': mape, 'mae': mae,
+        'r2': r2, 'r2_real': r2_real, 'mape': mape, 'mae': mae,
         'hold_results': hold_results, 'val_results': val_results,
         'importances': importances, 'train_size': len(train)
     }
@@ -628,9 +632,13 @@ g2.metric(
     help=(f"Major album releases used to train the model ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). "
           f"A further {N_HOLD} albums from 2025 and {N_VAL} from 2026 are held out for testing only."))
 g3.metric(
-    "Model R²", f"{state['r2']:.3f}",
-    help=(f"How well the model explains variation across albums. {state['r2']:.3f} is solid for music "
-          f"prediction given how unpredictable streaming can be."))
+    "Model R² (relative scale)", f"{state['r2']:.3f}",
+    help=(f"Measured on log(streams ÷ users), so it scores how well the model places an album's size "
+          f"relative to Spotify's audience at the time, not its raw stream count. Computed by "
+          f"leave-one-out cross-validation, on albums the model had not seen.\n\n"
+          f"On the raw stream scale the same predictions score about {state['r2_real']:.2f}, because a "
+          f"few outsized albums account for most of the spread and the model under-predicts them. "
+          f"Average prediction error is the more intuitive gauge of everyday accuracy."))
 g4.metric(
     "Avg. prediction error", f"{state['mape']:.1f}%",
     help=("Average percentage the prediction is off from the real number, measured across all training "
