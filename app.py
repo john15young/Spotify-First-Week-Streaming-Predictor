@@ -5,7 +5,6 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import LeaveOneOut
 from sklearn.metrics import r2_score
 import io, warnings, time, urllib.parse
-from datetime import date
 from PIL import Image, ImageDraw, ImageFont
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -422,9 +421,6 @@ st.markdown(f"""
 
 artists = sorted(df['artist'].unique().tolist())
 
-_ariana_release = date(2026, 7, 31)
-_days_to_ariana = (_ariana_release - date.today()).days
-
 # Recent predictions
 st.markdown(f"""
 <div style="margin-bottom:6px;">
@@ -454,30 +450,19 @@ st.markdown(f"""
             </div>
             <div style="font-size:12px; color:#4ade80; margin-top:4px;">+4.7% off &nbsp;✓</div>
         </div>
-        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #1db95444; border-radius:12px; padding:14px 18px;">
-            <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
-                <span style="font-size:12px; color:#b3b3b3;">Ariana Grande — Petal 🌺</span>
-                <span style="display:inline-flex; align-items:center; gap:4px; background:#1db95422; border:1px solid {SPOTIFY_GREEN}; border-radius:20px; padding:1px 7px; font-size:10px; color:{SPOTIFY_GREEN}; font-weight:600;">
-                    <span style="width:6px; height:6px; border-radius:50%; background:{SPOTIFY_GREEN}; display:inline-block; animation:pulse 1.5s infinite;"></span>
-                    LIVE
-                </span>
-            </div>
-            <div style="display:flex; align-items:baseline; gap:10px; flex-wrap:wrap;">
+        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
+            <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Ariana Grande — Petal 🌺</div>
+            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
                 <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">408M</span>
-                <span style="font-size:13px; color:#b3b3b3;">predicted</span>
+                <span style="font-size:11px; color:#666;">predicted</span>
+                <span style="color:#333; font-size:16px;">|</span>
+                <span style="font-size:22px; font-weight:700; color:#fff;">236.1M</span>
+                <span style="font-size:11px; color:#666;">actual</span>
             </div>
-            <div style="font-size:12px; color:#b3b3b3; margin-top:4px;">
-                {"Releasing in " + str(_days_to_ariana) + " days (Jul 31, 2026)" if _days_to_ariana > 0 else "Released — actual pending"}
-            </div>
+            <div style="font-size:12px; color:#f87171; margin-top:4px;">+72.8% off</div>
         </div>
     </div>
 </div>
-<style>
-@keyframes pulse {{
-    0%, 100% {{ opacity: 1; }}
-    50% {{ opacity: 0.3; }}
-}}
-</style>
 """, unsafe_allow_html=True)
 
 st.markdown(f"""
