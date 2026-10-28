@@ -24,6 +24,8 @@ Drake and Olivia were both predicted ahead of release, from raw model output wit
 
 Ariana is a clear miss, kept here as a documented limitation rather than excluded. The model expected a return close to her historical baseline; the album opened at roughly two-thirds of that. It matches the over-prediction pattern recorded for Harry Styles below. The model has no signal for a shrinking audience.
 
+A note on scope: the 2025 holdout of 7 albums is the model's real out-of-sample test. These three 2026 albums are a separate, smaller check made under live conditions.
+
 ---
 
 ## Data & Methodology
@@ -71,21 +73,23 @@ XGBoost underperformed RF at the current dataset size. Will be revisited at 80+ 
 | Metric | Value |
 |---|---|
 | LOOCV R² (log scale) | 0.483 |
-| LOOCV MAPE | 40.1% |
-| LOOCV median error | 22.6% |
-| 2025 Holdout MAPE | 26.7% (7 unseen albums) |
+| LOOCV MAPE | 40.0% |
+| LOOCV median error | 22.5% |
+| 2025 Holdout MAPE | 25.8% (7 unseen albums) |
 | 2026 Case Study: Drake Iceman | +6.4% over |
 | 2026 Case Study: Olivia Rodrigo | +4.7% over |
 | 2026 Case Study: Ariana Grande Petal | +72.8% over (documented limitation) |
-| 2026 Validation: Harry Styles KissAllTheTime | +60.2% over (documented limitation) |
+| 2026 Validation: Harry Styles KissAllTheTime | +60.7% over (documented limitation) |
 
-Holdout MAPE (26.7%) beating LOOCV MAPE (40.1%) suggests the model generalizes rather than memorizes, though with only 7 holdout albums that gap carries a wide confidence interval.
+Holdout MAPE (25.8%) beating LOOCV MAPE (40.0%) suggests the model generalizes rather than memorizes, though with only 7 holdout albums that gap carries a wide confidence interval.
+
+The 2026 row is a single album, not a validation set. One observation cannot estimate an error rate; it is logged as a data point, and the 2025 holdout is the real out-of-sample test.
 
 ### Reading the R² honestly
 
 The 0.483 is measured on `log(streams / MAU)`, so it scores how well the model places an album relative to the platform, not its raw stream count. On the raw scale the same predictions score far lower, because a few outsized albums (TTPD at 1,173M) dominate the variance and the model does not reach them.
 
-Against naive baselines, the model beats "always guess the dataset median" by a modest margin on LOOCV MAPE. With 49 rows and 8 features, that margin is suggestive rather than decisive. The median error of 22.6% describes everyday behavior better than the mean, which the Taylor Swift outliers drag upward.
+Against naive baselines, the model beats "always guess the dataset median" by a modest margin on LOOCV MAPE. With 49 rows and 8 features, that margin is suggestive rather than decisive. The median error of 22.5% describes everyday behavior better than the mean, which the Taylor Swift outliers drag upward.
 
 ---
 
@@ -93,7 +97,7 @@ Against naive baselines, the model beats "always guess the dataset median" by a 
 
 - Some training rows fall back to the dataset median (~285M) for the history feature, since no earlier album exists for that artist yet. This is standard handling for first-observed entries in a small dataset. All three 2026 case study predictions use real prior-album data, not the fallback.
 - Superstar-only dataset. The median reflects a major-label superstar baseline, not the music industry at large.
-- **Over-prediction for artists with declining momentum.** Ariana Grande 2026 (+72.8%) and Harry Styles 2026 (+60.2%) are the clearest cases. The model over-credits historical scale with no signal for a shrinking audience. This is the single largest known weakness.
+- **Over-prediction for artists with declining momentum.** Ariana Grande 2026 (+72.8%) and Harry Styles 2026 (+60.7%) are the clearest cases. The model over-credits historical scale with no signal for a shrinking audience. This is the single largest known weakness.
 - **Over-prediction for artists with thin history.** With only one prior album, the history signal is close to noise. The live app now flags this case before showing a prediction.
 - **Front-loaded release assumption.** Every training album is a conventional release where streams concentrate in week one. Slow-burn releases that build over later weeks are not represented, and the model cannot anticipate them.
 - Surprise releases (Bieber's *Swag*, Taylor Swift's *Folklore*/*Evermore*) are not modeled accurately. `lead_time=1` is used as a workaround. An `is_surprise` binary feature is planned once the dataset supports it.
@@ -115,7 +119,7 @@ Case study predictions are recorded ahead of each release and never recomputed. 
 
 After the summer 2026 case study, I audited the model's inputs and found a problem with its strongest one.
 
-`hype_score` was a 1 to 10 rating of pre-release buzz that I assigned by hand. It correlated with the target at 0.49, far ahead of the next input at 0.22.
+`hype_score` was a 1 to 10 rating of pre-release buzz that I assigned by hand. It was the model's most load-bearing input: removing it cost 0.042 of LOOCV R², more than double the next feature (`lead_time`, 0.019) and far ahead of everything else.
 
 The problem was when I scored it. All 49 historical albums were rated after they had already come out. I gave TTPD a 10 knowing it had opened at 1,173M. So the feature was not purely measuring anticipation. It was partly recording the answer.
 
@@ -125,24 +129,26 @@ The test that confirmed it:
 
 | Feature set | LOOCV R² | LOOCV MAPE | 2025 holdout MAPE |
 |---|---|---|---|
-| Original, 11 features | 0.518 | 38.2% | 25.8% |
-| `hype_score` removed, 10 features | 0.475 | 40.9% | **23.1%** |
+| Original, 11 features | 0.519 | 38.2% | 25.4% |
+| `hype_score` removed, 10 features | 0.477 | 40.8% | **22.4%** |
 
 Dropping it made the cross-validated numbers worse but the held-out year better. A feature that helps on data scored after the fact, and hurts on data the model never saw, is leaking.
 
-So I removed it. I also merged three history inputs into one, since removing any single one moved R² by less than 0.005. The others simply absorbed the work, which meant they were three versions of the same signal.
+So I removed it. I also merged three history inputs into one. Ablation showed they were near-interchangeable: removing `trailing_avg_per_mau` moved R² by 0.003, and removing either `prev_streams_per_mau` or `trailing_spt_per_mau` slightly *improved* it. Whichever one was dropped, the others absorbed the work, which is what three versions of the same signal look like.
 
 Where that left the model:
 
 | | Original | Revised |
 |---|---|---|
 | Features | 11 | 8 |
-| LOOCV R² (log scale) | 0.518 | 0.483 |
-| LOOCV MAPE | 38.2% | 40.1% |
-| LOOCV median error | 22.7% | 22.6% |
-| 2025 holdout MAPE | 25.8% | 26.7% |
+| LOOCV R² (log scale) | 0.519 | 0.483 |
+| LOOCV MAPE | 38.2% | 40.0% |
+| LOOCV median error | 22.5% | 22.5% |
+| 2025 holdout MAPE | 25.4% | 25.8% |
 
 The headline numbers got slightly worse, which is the correct outcome. The old ones were propped up by a feature that had seen the answers.
+
+One honest trade-off: if I had removed only `hype_score` and kept the three history inputs separate, the model scored slightly better on the 2025 test albums (22.4% error vs 25.8%). I merged them anyway because they were measuring the same thing, and a simpler model is easier to trust. With only 7 test albums, a gap that small could easily be luck, so I didn't treat it as a reason to keep the extra inputs.
 
 The case study was unaffected. Those three albums had not been released when I scored them, so no hindsight was available to apply. Their predictions are left exactly as recorded.
 
