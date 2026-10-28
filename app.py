@@ -8,100 +8,161 @@ import io, warnings, time, urllib.parse
 from PIL import Image, ImageDraw, ImageFont
 warnings.filterwarnings("ignore", category=UserWarning)
 
-st.set_page_config(page_title="Spotify First-Week Streaming Predictor", layout="wide", page_icon="🎧")
+st.set_page_config(
+    page_title="Spotify First-Week Streaming Predictor",
+    layout="wide",
+    page_icon="🎧",
+    initial_sidebar_state="collapsed",
+)
 
 SPOTIFY_GREEN = "#1DB954"
 
-st.markdown(f"""
+# NOTE: plain (non-f) string so CSS braces don't need escaping.
+st.markdown("""
 <style>
     /* Base */
-    .stApp {{ background-color: #0e1117; }}
-    section[data-testid="stSidebar"] {{ background-color: #14171d; }}
+    .stApp { background-color: #0e1117; }
+
+    /* Sidebar fully removed - all controls live on the page now */
+    section[data-testid="stSidebar"] { display: none !important; }
+    div[data-testid="stSidebarCollapsedControl"] { display: none !important; }
 
     /* Metric cards */
-    div[data-testid="stMetric"] {{
+    div[data-testid="stMetric"] {
         background-color: #181b21;
         border: 1px solid #2a2e37;
         border-radius: 10px;
         padding: 14px 16px;
-    }}
-    div[data-testid="stMetricValue"] {{ color: {SPOTIFY_GREEN}; }}
+    }
+    div[data-testid="stMetricValue"] { color: #1DB954; }
 
     /* Hide Streamlit anchor links on headings */
-    h1 a, h2 a, h3 a {{ display: none !important; }}
+    h1 a, h2 a, h3 a { display: none !important; }
 
-    /* Input column card styling via column container */
-    div[data-testid="column"]:first-child {{
+    /* Page title */
+    .app-title {
+        font-size: 3.1rem;
+        font-weight: 800;
+        line-height: 1.12;
+        letter-spacing: -0.015em;
+        margin: 0 0 1.4rem 0;
+        color: #ffffff;
+    }
+    @media (max-width: 900px) {
+        .app-title { font-size: 2.1rem; }
+    }
+
+    /* Recent prediction cards */
+    .pred-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+    }
+    @media (max-width: 950px) {
+        .pred-grid { grid-template-columns: 1fr; }
+    }
+    .pred-card {
+        display: flex;
+        flex-direction: column;
         background: #13161d;
         border: 1px solid #22262f;
-        border-radius: 14px;
-        padding: 22px 24px 18px 24px;
-    }}
+        border-radius: 12px;
+        padding: 16px 18px 14px 18px;
+        min-width: 0;
+    }
+    .pred-card-title {
+        font-size: 13.5px;
+        font-weight: 600;
+        color: #ffffff;
+        line-height: 1.45;
+        margin-bottom: 12px;
+        min-height: 2.9em;
+        overflow-wrap: anywhere;
+    }
+    .pred-row { display: flex; align-items: stretch; gap: 16px; }
+    .pred-num { font-size: 25px; font-weight: 700; line-height: 1.1; white-space: nowrap; }
+    .pred-lbl { font-size: 11px; color: #777f8c; margin-top: 3px; white-space: nowrap; }
+    .pred-sep { width: 1px; background: #2a2e37; flex: 0 0 1px; }
+    .pred-badge { margin-top: auto; padding-top: 12px; font-size: 12.5px; font-weight: 600; }
 
     /* Prediction result card */
-    .result-card {{
+    .result-card {
         background: linear-gradient(160deg, #0d2a18 0%, #111820 60%, #0e1117 100%);
-        border: 1px solid {SPOTIFY_GREEN};
+        border: 1px solid #1DB954;
         border-radius: 14px;
         padding: 28px 32px;
         margin: 12px 0 20px 0;
         box-shadow: 0 0 24px #1db95422;
-    }}
+    }
 
     /* Section divider label */
-    .section-divider {{
+    .section-divider {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin: 20px 0 18px 0;
-    }}
-    .section-divider-line {{
+        margin: 26px 0 18px 0;
+    }
+    .section-divider-line {
         flex: 1;
         height: 1px;
-        background: linear-gradient(90deg, {SPOTIFY_GREEN}88, transparent);
-    }}
-    .section-divider-label {{
-        color: {SPOTIFY_GREEN};
+        background: linear-gradient(90deg, #1DB95488, transparent);
+    }
+    .section-divider-label {
+        color: #1DB954;
         font-size: 12px;
         font-weight: 600;
         letter-spacing: 0.12em;
         text-transform: uppercase;
         white-space: nowrap;
-    }}
+    }
 
-    /* Predict button */
-    .stButton button[kind="primary"] {{
-        background-color: {SPOTIFY_GREEN};
+    /* Primary predict button - large pill */
+    .stButton button[kind="primary"] {
+        background-color: #1DB954;
         border: none;
         color: #0e1117;
-        font-weight: 700;
-        font-size: 15px;
+        border-radius: 999px;
+        min-height: 64px;
+        padding: 18px 30px;
         letter-spacing: 0.03em;
+        box-shadow: 0 0 20px #1db95433;
         transition: all 0.2s ease;
-    }}
-    .stButton button[kind="primary"]:hover {{
+    }
+    .stButton button[kind="primary"] p {
+        font-size: 19px !important;
+        font-weight: 800 !important;
+    }
+    .stButton button[kind="primary"]:hover {
         background-color: #1ed760;
         color: #0e1117;
-        box-shadow: 0 0 16px #1db95466;
+        box-shadow: 0 0 28px #1db95477;
         transform: translateY(-1px);
-    }}
+    }
+
+    /* Slider + toggle accent (config.toml primaryColor is the main fix) */
+    div[data-baseweb="slider"] [role="slider"] { background-color: #1DB954 !important; }
 
     /* Footer */
-    .app-footer {{
+    .app-footer {
         margin-top: 48px;
         padding: 20px 0 8px 0;
         border-top: 1px solid #1e2228;
-        text-align: center;
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        align-items: center;
+        gap: 10px 18px;
         color: #4a5060;
         font-size: 13px;
         letter-spacing: 0.02em;
-    }}
-    .app-footer span {{ color: {SPOTIFY_GREEN}88; }}
+    }
+    .app-footer span { white-space: nowrap; }
+    .app-footer .accent { color: #1db95488; }
 </style>
 """, unsafe_allow_html=True)
 
 # =============================================================================
-# DATA — same CSV used by the original script (source of truth)
+# DATA - same CSV used by the original script (source of truth)
 # =============================================================================
 CSV_CONTENT = """artist,album,year,genre,track_count,spotify_mau,hype_score,lead_time,album_type,feature_track_count,years_since_last_album,prev_album_streams,first_week_streams,is_household_name
 Ed Sheeran,Divide,2017,0,16,120,9.0,21,0,0,4,0,375,1
@@ -166,11 +227,37 @@ FEATS = ['track_count', 'spotify_mau', 'hype_score', 'lead_time', 'feature_track
          'years_since_last_album', 'prev_streams_per_mau', 'trailing_avg_per_mau',
          'trailing_spt_per_mau', 'is_household_name', 'household_x_tracks']
 
-DEFAULT_MAU = 761  # current Spotify global MAU (millions), editable in sidebar
+# Spotify global MAU (millions) by release period. A prediction is pinned to the
+# platform size at the album's release, so the same inputs always reproduce the same
+# number even as Spotify keeps growing. 2026 is split because MAU moved mid-year.
+MAU_BY_PERIOD = {
+    "2015": 80,
+    "2016": 100,
+    "2017": 120,
+    "2018": 207,
+    "2019": 248,
+    "2020": 299,
+    "2021": 365,
+    "2022": 489,
+    "2023": 574,
+    "2024": 640,
+    "2025": 715,
+    "2026 H1": 761,
+    "2026 H2": 788,
+}
+DEFAULT_PERIOD = "2026 H2"
+DEFAULT_MAU = MAU_BY_PERIOD[DEFAULT_PERIOD]
+MAU_SOURCE_NOTE = (
+    "Spotify put its monthly active users at 788 million in its Q3 2026 earnings report. "
+    "Earlier periods use Spotify's reported figure for that year."
+)
+
+TRAIN_YEAR_MAX = 2024
+TRAIN_YEAR_MIN = 2015
 
 
 # =============================================================================
-# MODEL TRAINING — cached so it only runs once per session
+# MODEL TRAINING - cached so it only runs once per session
 # =============================================================================
 @st.cache_resource
 def load_and_train():
@@ -195,7 +282,7 @@ def load_and_train():
         df[col] = df[src] / df['spotify_mau']
     df['log_spm'] = np.log(df['first_week_streams'] / df['spotify_mau'])
 
-    train = df[df['year'] <= 2024].copy()
+    train = df[df['year'] <= TRAIN_YEAR_MAX].copy()
     hold = df[df['year'] == 2025].copy()
     val26 = df[df['year'] == 2026].copy()
 
@@ -253,20 +340,44 @@ state = load_and_train()
 df, model = state['df'], state['model']
 gm, gm_spt = state['gm'], state['gm_spt']
 
-# Reference-only prior-album data — used ONLY to correct "years since last album" and
+# Counts used throughout the copy so nothing goes stale when the dataset changes.
+N_TRAIN = state['train_size']
+N_HOLD = len(state['hold_results'])
+N_VAL = len(state['val_results'])
+HOLDOUT_MAPE = float(np.mean([r['err'] for r in state['hold_results']])) if N_HOLD else float('nan')
+
+# Reference-only prior-album data. Used ONLY to correct "years since last album" and
 # display-only prev-streams for artists whose earlier album we have real numbers for,
-# but did NOT add to training data because doing so measurably hurt holdout accuracy
-# (tested individually + combined; see project notes). Never fed into the model.
+# but NOT added to training data because doing so measurably hurt holdout accuracy
+# (tested individually and combined; see project notes). Never fed into the model.
 REFERENCE_HISTORY = {
-    "Post Malone":       {"year": 2019, "streams": 379},  # Hollywood's Bleeding already in training; this just documents the chain
+    "Post Malone":       {"year": 2019, "streams": 379},  # Hollywood's Bleeding already in training; documents the chain
     "Tyler The Creator":  {"year": 2021, "streams": 133},  # Call Me If You Get Lost
     "Billie Eilish":      {"year": 2021, "streams": 178},  # Happier Than Ever
     "Taylor Swift":       {"year": 2020, "streams": 254},  # Evermore (Folklore same year, Evermore is later)
-    "21 Savage":          {"year": 2020, "streams": 108},  # Savage Mode II (collab w/ Metro — kept separate, see notes)
+    "21 Savage":          {"year": 2020, "streams": 108},  # Savage Mode II (collab w/ Metro, kept separate, see notes)
     "Metro Boomin":       {"year": 2022, "streams": 226},  # Heroes & Villains
     "Ariana Grande":      {"year": 2018, "streams": 174},  # Sweetener
     "Harry Styles":       {"year": 2017, "streams": 66},   # Harry Styles (debut)
 }
+
+# Recent public predictions, checked against the real first-week numbers.
+RECENT_PREDICTIONS = [
+    {"artist": "Drake", "album": "Iceman", "pred": 479, "actual": 450.4},
+    {"artist": "Olivia Rodrigo", "album": "you seem pretty sad...", "pred": 413, "actual": 394.7},
+    {"artist": "Ariana Grande", "album": "Petal", "pred": 408, "actual": 236.1},
+]
+
+
+def accuracy_style(diff_pct):
+    """Color and marker for a prediction vs. actual gap. Green inside 15%,
+    amber 15 to 30, red beyond 30."""
+    a = abs(diff_pct)
+    if a < 15:
+        return "#4ade80", " ✓"
+    if a < 30:
+        return "#fbbf24", ""
+    return "#f87171", ""
 
 
 def predict(params, mau):
@@ -276,8 +387,8 @@ def predict(params, mau):
 
 
 def reference_adjusted_first_year(artist):
-    """Returns the earliest known release year for an artist, factoring in REFERENCE_HISTORY
-    even though that earlier album isn't part of the training data."""
+    """Earliest known release year for an artist, factoring in REFERENCE_HISTORY
+    even though that earlier album is not part of the training data."""
     a = df[df['artist'] == artist].sort_values('year')
     years = a['year'].tolist()
     if artist in REFERENCE_HISTORY:
@@ -285,16 +396,41 @@ def reference_adjusted_first_year(artist):
     return min(years) if years else None
 
 
-def artist_history(artist, mau):
+def latest_release_year(artist, before_year=None):
+    """Most recent known release year, including reference-only albums. With before_year
+    set, only albums released strictly earlier count, so backdating a prediction does not
+    let a later album leak in as the artist's 'previous' one."""
+    a = df[df['artist'] == artist].sort_values('year')
+    if before_year is not None:
+        a = a[a['year'] < before_year]
+    year = int(a.iloc[-1]['year']) if len(a) else None
+    if artist in REFERENCE_HISTORY:
+        ref_year = REFERENCE_HISTORY[artist]['year']
+        if (before_year is None or ref_year < before_year) and (year is None or ref_year > year):
+            year = ref_year
+    return year
+
+
+def artist_history(artist, mau, before_year=None):
     """Auto-fill trailing/prev fields from CSV history, falling back to dataset medians.
     Display-only prev_album_streams uses REFERENCE_HISTORY when the real training rows
-    don't have it, so the UI shows the correct number even though it's not in training."""
-    a = df[df['artist'] == artist].sort_values('year')
-    is_hh = int(a.iloc[-1]['is_household_name']) if len(a) else 0
+    do not have it, so the UI shows the correct number even though it is not in training.
+
+    before_year restricts the history to albums released strictly earlier, matching how the
+    training features were built (prior_mean also looks only at year < the album's year).
+    Without it, predicting an earlier period would feed the model albums that had not come
+    out yet."""
+    full = df[df['artist'] == artist].sort_values('year')
+    a = full[full['year'] < before_year] if before_year is not None else full
+
+    # Household-name status is an attribute of the artist, not of one release, so it is read
+    # from the full history rather than the period-restricted slice.
+    is_hh = int(full.iloc[-1]['is_household_name']) if len(full) else 0
 
     if len(a):
         prev = a.iloc[-1]['first_week_streams'] / mau
-    elif artist in REFERENCE_HISTORY:
+    elif artist in REFERENCE_HISTORY and (before_year is None
+                                          or REFERENCE_HISTORY[artist]['year'] < before_year):
         prev = REFERENCE_HISTORY[artist]['streams'] / mau
     else:
         prev = gm / mau
@@ -313,7 +449,7 @@ def compute_contribution_breakdown(params, importances, train_df):
     """Rough, approximate view of which inputs pushed the prediction up or down,
     based on how far each value sits from the typical (median) album in training
     data, weighted by the model's feature importance. This is NOT a true SHAP
-    decomposition — it's a simplified, directionally useful approximation."""
+    decomposition, just a simplified, directionally useful approximation."""
     friendly = {
         'track_count': 'Track count',
         'spotify_mau': 'Platform size (era)',
@@ -345,7 +481,7 @@ def compute_contribution_breakdown(params, importances, train_df):
     return out
 
 
-def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt):
+def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_note=""):
     """Builds a shareable PNG summary card using PIL, styled to match the app theme."""
     W, H = 1200, 675
     bg = (14, 17, 23)
@@ -368,18 +504,21 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt):
     font_artist = load_font(True, 44)
     font_big = load_font(True, 130)
     font_range = load_font(False, 30)
+    font_basis = load_font(False, 25)
     font_footer = load_font(False, 24)
 
     # Accent border
     draw.rectangle([(0, 0), (W - 1, H - 1)], outline=green, width=6)
 
-    title = f"{artist_name}" + (f" — {album_name}" if album_name else "")
-    draw.text((70, 70), "🎧 First-Week Stream Prediction", font=font_label, fill=(179, 179, 179))
+    title = f"{artist_name}" + (f": {album_name}" if album_name else "")
+    draw.text((70, 70), "First-Week Stream Prediction", font=font_label, fill=(179, 179, 179))
     draw.text((70, 120), title, font=font_artist, fill=(255, 255, 255))
 
     draw.text((70, 260), f"{pred:.0f}M", font=font_big, fill=green)
     draw.text((70, 410), "predicted first-week global streams", font=font_range, fill=(179, 179, 179))
     draw.text((70, 460), f"Confidence range: {lo_fmt} to {hi_fmt}", font=font_range, fill=(179, 179, 179))
+    if basis_note:
+        draw.text((70, 510), basis_note, font=font_basis, fill=(122, 122, 122))
 
     draw.text((70, H - 70), "spotify-first-week-streaming-predictor.streamlit.app", font=font_footer, fill=(102, 102, 102))
 
@@ -393,392 +532,388 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt):
 # UI
 # =============================================================================
 st.markdown(
-    f"<h1 style='font-size:2.1rem; font-weight:800; line-height:1.2; margin-bottom:0.5rem;'>"
-    f"🎧 Spotify First-Week Global Streaming Predictor for Major Album Releases</h1>",
+    "<h1 class='app-title'>🎧 Spotify First-Week Global Streaming Predictor "
+    "for Major Album Releases</h1>",
     unsafe_allow_html=True
 )
 
 st.markdown(f"""
-<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px;">
+<div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px;">
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">📊</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">What it does</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for announced major album releases, using a machine learning model trained on 49 albums (2015 to 2026).</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for announced major album releases, using a machine learning model trained on {N_TRAIN} albums ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}).</p>
     </div>
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🎯</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">How to use it</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, fill in a few album details, and hit Predict. Artist streaming history is auto-filled — you only need to supply the album-specific inputs like track count and hype score.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, fill in a few album details, and hit Predict. Artist streaming history is auto-filled, so you only need to supply the album-specific inputs like track count and hype score.</p>
     </div>
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🔧</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">The prediction engine is actively being improved — upcoming updates include expanded historical data, additional artists across more genres, and refined modeling techniques.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">The prediction engine is actively being improved. Upcoming updates include expanded historical data, additional artists across more genres, and refined modeling techniques.</p>
     </div>
 </div>
 <p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
 """, unsafe_allow_html=True)
 
 artists = sorted(df['artist'].unique().tolist())
+DEFAULT_ARTIST = "Drake"
+default_artist_index = artists.index(DEFAULT_ARTIST) if DEFAULT_ARTIST in artists else 0
 
+# -----------------------------------------------------------------------------
 # Recent predictions
+# -----------------------------------------------------------------------------
+cards_html = []
+for item in RECENT_PREDICTIONS:
+    diff_pct = (item['pred'] - item['actual']) / item['actual'] * 100
+    badge_color, marker = accuracy_style(diff_pct)
+    cards_html.append(f"""
+    <div class="pred-card">
+        <div class="pred-card-title">{item['artist']}: {item['album']}</div>
+        <div class="pred-row">
+            <div>
+                <div class="pred-num" style="color:{SPOTIFY_GREEN};">{item['pred']:.0f}M</div>
+                <div class="pred-lbl">predicted</div>
+            </div>
+            <div class="pred-sep"></div>
+            <div>
+                <div class="pred-num" style="color:#ffffff;">{item['actual']:.1f}M</div>
+                <div class="pred-lbl">actual</div>
+            </div>
+        </div>
+        <div class="pred-badge" style="color:{badge_color};">{diff_pct:+.1f}% off{marker}</div>
+    </div>""")
+
 st.markdown(f"""
-<div style="margin-bottom:6px;">
-    <p style="font-size:13px; color:#b3b3b3; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">
-        Recent predictions
-    </p>
-    <div style="display:flex; gap:12px; flex-wrap:wrap;">
-        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
-            <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Drake — Iceman 🧊</div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">479M</span>
-                <span style="font-size:11px; color:#666;">predicted</span>
-                <span style="color:#333; font-size:16px;">|</span>
-                <span style="font-size:22px; font-weight:700; color:#fff;">450.4M</span>
-                <span style="font-size:11px; color:#666;">actual</span>
-            </div>
-            <div style="font-size:12px; color:#4ade80; margin-top:4px;">+6.4% off &nbsp;✓</div>
-        </div>
-        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
-            <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Olivia Rodrigo — you seem pretty sad... 💜</div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">413M</span>
-                <span style="font-size:11px; color:#666;">predicted</span>
-                <span style="color:#333; font-size:16px;">|</span>
-                <span style="font-size:22px; font-weight:700; color:#fff;">394.7M</span>
-                <span style="font-size:11px; color:#666;">actual</span>
-            </div>
-            <div style="font-size:12px; color:#4ade80; margin-top:4px;">+4.7% off &nbsp;✓</div>
-        </div>
-        <div style="flex:1; min-width:180px; background:#13161d; border:1px solid #22262f; border-radius:12px; padding:14px 18px;">
-            <div style="font-size:12px; color:#b3b3b3; margin-bottom:4px;">Ariana Grande — Petal 🌺</div>
-            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
-                <span style="font-size:22px; font-weight:700; color:{SPOTIFY_GREEN};">408M</span>
-                <span style="font-size:11px; color:#666;">predicted</span>
-                <span style="color:#333; font-size:16px;">|</span>
-                <span style="font-size:22px; font-weight:700; color:#fff;">236.1M</span>
-                <span style="font-size:11px; color:#666;">actual</span>
-            </div>
-            <div style="font-size:12px; color:#f87171; margin-top:4px;">+72.8% off</div>
-        </div>
-    </div>
+<p style="font-size:13px; color:#b3b3b3; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">
+    Recent predictions
+</p>
+<div class="pred-grid">{''.join(cards_html)}</div>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# At a glance (moved off the sidebar)
+# -----------------------------------------------------------------------------
+st.markdown("""
+<div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Model at a glance</div>
+    <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
 </div>
 """, unsafe_allow_html=True)
 
-st.markdown(f"""
+g1, g2, g3, g4 = st.columns(4)
+g1.metric(
+    "Accuracy on unseen albums", f"{100 - HOLDOUT_MAPE:.0f}%",
+    help=(f"100 minus the model's average error on the {N_HOLD} albums from 2025 that it never saw "
+          f"during training. It describes how close predictions land on average. It is not a hit rate, "
+          f"so it does not say how often a prediction falls inside its confidence range."))
+g2.metric(
+    "Albums tracked", N_TRAIN,
+    help=(f"Major album releases used to train the model ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). "
+          f"A further {N_HOLD} albums from 2025 and {N_VAL} from 2026 are held out for testing only."))
+g3.metric(
+    "Model R²", f"{state['r2']:.3f}",
+    help=(f"How well the model explains variation across albums. {state['r2']:.3f} is solid for music "
+          f"prediction given how unpredictable streaming can be."))
+g4.metric(
+    "Avg. prediction error", f"{state['mape']:.1f}%",
+    help=("Average percentage the prediction is off from the real number, measured across all training "
+          "albums using leave-one-out cross-validation."))
+
+# -----------------------------------------------------------------------------
+# Prediction output (rendered above the inputs, full width)
+# -----------------------------------------------------------------------------
+st.markdown("""
 <div class="section-divider">
     <div class="section-divider-line"></div>
     <div style="text-align:center;">
         <div class="section-divider-label">Make a prediction</div>
-        <div style="font-size:11px; color:#b3b3b3; margin-top:3px; white-space:nowrap;">Fill in album details below to generate a first-week stream estimate</div>
+        <div style="font-size:11px; color:#b3b3b3; margin-top:3px;">Fill in album details below to generate a first-week stream estimate</div>
     </div>
     <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
 </div>
 """, unsafe_allow_html=True)
 
-with st.sidebar:
-    st.markdown("### ⚙️ Global setting")
-    mau = st.number_input("Spotify global MAU (millions)", min_value=1, value=DEFAULT_MAU, step=1,
-                           help="Spotify's total monthly active users worldwide, used to normalize all streaming figures.")
-    st.divider()
-    st.markdown("### 📊 At a glance")
-    holdout_mape = np.mean([r['err'] for r in state['hold_results']])
-    accuracy_pct = 100 - holdout_mape
-    st.metric("Prediction accuracy", f"{accuracy_pct:.0f}%", help="How often the model lands within its confidence range on albums it has never seen. Based on 7 held-out 2025 albums.")
-    st.metric("Albums tracked", state['train_size'], help="Number of major album releases used to train the model (2015 to 2026).")
-    st.metric("Model R²", f"{state['r2']:.3f}", help="How well the model explains variation across albums. 0.52 is solid for music prediction given how unpredictable streaming can be.")
-    st.metric("Avg. prediction error", f"{state['mape']:.1f}%", help="Average percentage the prediction is off from the real number, measured across all training albums using leave-one-out cross-validation.")
-    st.divider()
+prediction_slot = st.container()
 
-    with st.expander("🔍 How accurate is this model?"):
-        st.markdown(
-            "The model was tested against albums it had **never seen during training** — "
-            "the gold standard for checking if a prediction tool actually works in the real world.\n\n"
-            f"Across those unseen albums, it was off by **{state['mape']:.1f}% on average**. "
-            "For context: predicting music streams is inherently noisy — viral moments, surprise drops, "
-            "and cultural timing can swing numbers by 2–3x in ways no model can fully anticipate."
-        )
-        hold_df = pd.DataFrame(state['hold_results'])
-        hold_df['pred'] = hold_df['pred'].round(0).astype(int)
-        hold_df['actual'] = hold_df['actual'].round(0).astype(int)
-        hold_df['err'] = hold_df['err'].round(1)
-        hold_df.columns = ['Album', 'Predicted (M)', 'Actual (M)', 'Error (%)']
-        st.caption("2025 albums — predicted before release, checked after:")
-        st.dataframe(hold_df, hide_index=True, use_container_width=True)
-        st.caption(f"Average error on these albums: {np.mean([r['err'] for r in state['hold_results']]):.1f}%")
+# -----------------------------------------------------------------------------
+# Album details (full width)
+# -----------------------------------------------------------------------------
+st.markdown("<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Album details</p>",
+            unsafe_allow_html=True)
 
-    with st.expander("✅ Real-world track record (2026)"):
-        st.markdown(
-            "These are 2026 albums with known outcomes — predicted by the model, "
-            "then checked against reality once the actual numbers came in."
-        )
-        val_df = pd.DataFrame(state['val_results'])
-        val_df['pred'] = val_df['pred'].round(0).astype(int)
-        val_df['actual'] = val_df['actual'].round(0).astype(int)
-        val_df['err'] = val_df['err'].round(1)
-        val_df.columns = ['Album', 'Predicted (M)', 'Actual (M)', 'Error (%)']
-        st.dataframe(val_df, hide_index=True, use_container_width=True)
+a_col, name_col = st.columns(2)
+with a_col:
+    artist_name = st.selectbox("Artist", artists, index=default_artist_index)
+with name_col:
+    album_name = st.text_input(
+        "Album name (optional)", placeholder="e.g. Midnight Rain",
+        help="Optional. If provided, your share tweet will include the album name.")
 
-    with st.expander("⚙️ What factors drive the prediction?"):
-        st.markdown(
-            "These are the inputs the model relies on most heavily. "
-            "The higher the number, the more that factor influences the prediction."
-        )
-        imp_df = state['importances'].reset_index()
-        imp_df.columns = ['Factor', 'Influence']
-        friendly = {
-            'trailing_avg_per_mau': "Artist's recent streaming average",
-            'prev_streams_per_mau': "Previous album's first-week streams",
-            'spotify_mau': 'Spotify platform size (era)',
-            'hype_score': 'Pre-release buzz (your rating)',
-            'trailing_spt_per_mau': 'Avg. streams per track recently',
-            'lead_time': 'Days between announcement & release',
-            'household_x_tracks': 'Household name x track count',
-            'track_count': 'Number of tracks',
-            'feature_track_count': 'Featured artist tracks',
-            'years_since_last_album': 'Gap since last album',
-            'is_household_name': 'Household-name status',
-        }
-        imp_df['Factor'] = imp_df['Factor'].map(friendly).fillna(imp_df['Factor'])
-        imp_df['Influence'] = imp_df['Influence'].round(3)
-        st.dataframe(imp_df, hide_index=True, use_container_width=True)
+# Release period sets the platform size the prediction is pinned to, and also the cutoff
+# for which of the artist's albums count as history. The MAU box is keyed on the period so
+# switching period reloads that period's figure, while an override you type stays put for
+# the period you typed it in.
+p_col, m_col, _spacer = st.columns([1, 1, 1])
+with p_col:
+    periods = list(MAU_BY_PERIOD)
+    release_period = st.selectbox(
+        "Release period", periods, index=periods.index(DEFAULT_PERIOD),
+        help="When the album comes out. This pins the prediction to Spotify's platform size at that "
+             "time, so the same inputs always reproduce the same number as Spotify keeps growing. "
+             "It also limits the artist's history to albums released before then.")
+with m_col:
+    mau = st.number_input(
+        "Spotify MAU at release (millions)", min_value=1,
+        value=MAU_BY_PERIOD[release_period], step=1, key=f"mau_{release_period}",
+        help="Auto-filled from the release period. Override it to model a future period Spotify has "
+             "not reported yet.")
 
-left_col, right_col = st.columns([0.55, 0.45], gap="large")
+release_year = int(release_period.split()[0])
+mau_basis = f"{mau}M MAU ({release_period})"
+if mau != MAU_BY_PERIOD[release_period]:
+    st.caption(f"Using a manual override of {mau}M. {release_period} reported "
+               f"{MAU_BY_PERIOD[release_period]}M.")
+else:
+    st.caption(MAU_SOURCE_NOTE)
 
-with left_col:
-    st.markdown(f"<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Album details</p>", unsafe_allow_html=True)
+# Artist bio snippet: last album plus a quick fact, limited to the chosen release period so
+# it shows the history the model will actually use.
+a_hist = df[(df['artist'] == artist_name) & (df['year'] < release_year)].sort_values('year')
+if len(a_hist) > 0:
+    last = a_hist.iloc[-1]
+    best = a_hist.loc[a_hist['first_week_streams'].idxmax()]
+    if len(a_hist) > 1:
+        fact = f"Best first-week before {release_year}: {best['album']}, {int(best['first_week_streams'])}M ({int(best['year'])})"
+    else:
+        fact = f"Only one album tracked for this artist before {release_year}"
+    st.markdown(
+        f"<div style='background:#13161d; border:1px solid #1db95444; border-radius:6px; padding:8px 14px; "
+        f"margin-bottom:12px; font-size:13px;'>"
+        f"<span style='color:{SPOTIFY_GREEN}; font-weight:600;'>Last album before {release_year}:</span> "
+        f"<span style='color:#fff;'>{last['album']}</span>"
+        f"<span style='color:#b3b3b3;'>, {int(last['first_week_streams'])}M first-week streams ({int(last['year'])})</span>"
+        f"<br><span style='color:#666; font-size:12px;'>{fact}</span>"
+        f"</div>",
+        unsafe_allow_html=True
+    )
+else:
+    st.markdown(
+        f"<div style='background:#13161d; border:1px solid #f59e0b44; border-radius:6px; padding:8px 14px; "
+        f"margin-bottom:12px; font-size:13px; color:#b3b3b3;'>"
+        f"No albums tracked for {artist_name} before {release_year}, so the model falls back to "
+        f"dataset medians. Expect a weaker prediction."
+        f"</div>",
+        unsafe_allow_html=True
+    )
 
-    artist_name = st.selectbox("Artist", artists)
-
-    # Artist bio snippet — last album + a quick fact
-    a_hist = df[df['artist'] == artist_name].sort_values('year')
-    if len(a_hist) > 0:
-        last = a_hist.iloc[-1]
-        n_albums = len(a_hist)
-        best = a_hist.loc[a_hist['first_week_streams'].idxmax()]
-        if n_albums > 1:
-            fact = f"Best first-week in dataset: {best['album']} — {int(best['first_week_streams'])}M ({int(best['year'])})"
-        else:
-            fact = "Only one album currently tracked for this artist"
-        st.markdown(
-            f"<div style='background:#13161d; border:1px solid #1db95444; border-radius:6px; padding:8px 14px; "
-            f"margin-bottom:12px; font-size:13px;'>"
-            f"<span style='color:{SPOTIFY_GREEN}; font-weight:600;'>Last album:</span> "
-            f"<span style='color:#fff;'>{last['album']}</span>"
-            f"<span style='color:#b3b3b3;'> — {int(last['first_week_streams'])}M first-week streams ({int(last['year'])})</span>"
-            f"<br><span style='color:#666; font-size:12px;'>{fact}</span>"
-            f"</div>",
-            unsafe_allow_html=True
-        )
-
-    album_name = st.text_input("Album name (optional)", placeholder="e.g. Midnight Rain", help="Optional. If provided, your share tweet will include the album name.")
-
+t_col, l_col, f_col = st.columns(3)
+with t_col:
     track_count = st.number_input(
-        "Track count",
-        min_value=1, value=12, step=1,
+        "Track count", min_value=1, value=12, step=1,
         help="Total number of tracks on the album, including interludes. Check the official pre-save or announced tracklist.")
-
+with l_col:
     lead_time = st.number_input(
-        "Lead time (days)",
-        min_value=0, value=21, step=1,
+        "Lead time (days)", min_value=0, value=21, step=1,
         help="Number of days between the official album announcement and the release date. If announced and released the same day, enter 0. A standard campaign is 3 to 6 weeks (21 to 42 days).")
-
+with f_col:
     feature_track_count = st.number_input(
-        "Featured artist tracks",
-        min_value=0, value=0, step=1,
+        "Featured artist tracks", min_value=0, value=0, step=1,
         help="How many tracks include a credited guest artist (e.g. feat. Drake). Leave at 0 if it is a solo album.")
 
+h_col, hh_col = st.columns([2, 1])
+with h_col:
     hype_score = st.slider(
-        "Hype score (0 to 10)",
-        0.0, 10.0, 9.0, 0.5,
-        help="Your read on pre-release buzz. Consider: how are lead singles charting? Is the artist trending on social media? Any major narrative (beef, comeback, tour, controversy)? 10 = peak cultural moment, 7 to 8 = solid mainstream interest, 5 to 6 = moderate, below 5 = quiet release.")
-
+        "Hype score (0 to 10)", 0.0, 10.0, 9.0, 0.5,
+        help="Your read on pre-release buzz. Consider: how are lead singles charting? Is the artist trending on social media? Any major narrative such as a beef, comeback, tour or controversy? 10 = peak cultural moment, 7 to 8 = solid mainstream interest, 5 to 6 = moderate, below 5 = quiet release.")
+with hh_col:
+    st.markdown("<div style='height:28px;'></div>", unsafe_allow_html=True)
     is_household = st.toggle(
-        "Household-name artist",
-        value=True,
+        "Household-name artist", value=True,
         help="Is this artist a globally recognized name? Think Taylor Swift, Drake, Eminem. Turn off for artists who are big within a genre but not yet mainstream crossover.")
 
-    # Years since last album (auto from CSV)
-    a = df[df['artist'] == artist_name].sort_values('year')
-    most_recent_year = int(a.iloc[-1]['year']) if len(a) else None
-    if artist_name in REFERENCE_HISTORY:
-        ref_year = REFERENCE_HISTORY[artist_name]['year']
-        if most_recent_year is None or ref_year > most_recent_year:
-            most_recent_year = ref_year
-    years_since_last = int(2026 - most_recent_year) if most_recent_year else 0
-    st.caption(f"Years since last album (auto): {years_since_last}")
+# Years since last album, measured against the chosen release period rather than today,
+# so a prediction for an earlier period uses the gap as it stood back then.
+most_recent_year = latest_release_year(artist_name, before_year=release_year)
+years_since_last = max(0, int(release_year - most_recent_year)) if most_recent_year else 0
+st.caption(f"Years since last album (auto): {years_since_last}")
 
-    # Auto-filled history fields
-    hist = artist_history(artist_name, mau)
-    hist['is_household_name'] = int(is_household)
+hist = artist_history(artist_name, mau, before_year=release_year)
+hist['is_household_name'] = int(is_household)
 
-    with st.expander("Auto-filled from artist history (dataset medians used if no history)"):
-        st.write(f"Previous release first-week streams: **{hist['prev_streams_per_mau'] * mau:.0f}M**")
-        st.write(f"Trailing average first-week streams: **{hist['trailing_avg_per_mau'] * mau:.0f}M**")
-        st.write(f"Trailing streams per track: **{hist['trailing_spt_per_mau'] * mau:.1f}M**")
+with st.expander("Auto-filled from artist history (dataset medians used if no history)"):
+    st.write(f"Previous release first-week streams: **{hist['prev_streams_per_mau'] * mau:.0f}M**")
+    st.write(f"Trailing average first-week streams: **{hist['trailing_avg_per_mau'] * mau:.0f}M**")
+    st.write(f"Trailing streams per track: **{hist['trailing_spt_per_mau'] * mau:.1f}M**")
 
-    predict_clicked = st.button("Predict first-week streams", type="primary", use_container_width=True)
+predict_clicked = st.button("Predict first-week streams", type="primary", use_container_width=True)
 
-with right_col:
-    st.markdown(f"<p style='font-size:22px; font-weight:700; margin-bottom:16px;'>Prediction</p>", unsafe_allow_html=True)
+# -----------------------------------------------------------------------------
+# Render the prediction into the slot above the inputs
+# -----------------------------------------------------------------------------
+with prediction_slot:
     if predict_clicked:
-        if not artist_name:
-            st.error("Enter an artist name.")
+        with st.spinner(f"Crunching {N_TRAIN} albums of streaming history..."):
+            time.sleep(0.8)
+            params = [
+                track_count, mau, hype_score, lead_time, feature_track_count,
+                years_since_last,
+                hist['prev_streams_per_mau'], hist['trailing_avg_per_mau'], hist['trailing_spt_per_mau'],
+                int(is_household), int(is_household) * track_count
+            ]
+            pred, lo, hi = predict(params, mau)
+
+        mape = state['mape']
+        daily_avg = pred / 7
+
+        has_history = len(df[df['artist'] == artist_name]) > 1
+        if not has_history:
+            card_border = "#f59e0b"
+            conf_note = "⚠️ Lower confidence: limited artist history in dataset"
+        elif hype_score < 6:
+            card_border = "#f59e0b"
+            conf_note = "⚠️ Lower confidence: a low hype score increases uncertainty"
         else:
-            with st.spinner("Crunching 49 albums of streaming history..."):
-                time.sleep(0.8)
-                params = [
-                    track_count, mau, hype_score, lead_time, feature_track_count,
-                    years_since_last,
-                    hist['prev_streams_per_mau'], hist['trailing_avg_per_mau'], hist['trailing_spt_per_mau'],
-                    int(is_household), int(is_household) * track_count
-                ]
-                pred, lo, hi = predict(params, mau)
-            mape = state['mape']
-            daily_avg = pred / 7
+            card_border = SPOTIFY_GREEN
+            conf_note = None
 
-            # Confidence color coding
-            has_history = len(df[df['artist'] == artist_name]) > 1
-            if not has_history:
-                card_border = "#f59e0b"
-                conf_note = "⚠️ Lower confidence — limited artist history in dataset"
-            elif hype_score < 6:
-                card_border = "#f59e0b"
-                conf_note = "⚠️ Lower confidence — low hype score increases uncertainty"
-            else:
-                card_border = SPOTIFY_GREEN
-                conf_note = None
+        lo_fmt = f"{pred * (1 - mape / 100):.0f}M"
+        hi_fmt = f"{pred * (1 + mape / 100):.0f}M"
+        album_label = f" ({album_name})" if album_name else ""
 
-            st.markdown(f"""
-            <div class="result-card" style="border-color:{card_border};">
-                <div style="color:#b3b3b3; font-size:14px; margin-bottom:4px;">Predicted first-week global streams</div>
-                <div style="color:{SPOTIFY_GREEN}; font-size:44px; font-weight:700; line-height:1.1;">{pred:.0f}M</div>
-                <div style="color:#b3b3b3; font-size:14px; margin-top:10px;">
-                    Confidence range (±{mape:.0f}% MAPE): {pred * (1 - mape / 100):.0f}M to {pred * (1 + mape / 100):.0f}M
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            if conf_note:
-                st.warning(conf_note)
-
-            c1, c2 = st.columns(2)
-            c1.metric("Streams per track", f"{pred / track_count:.1f}M",
-                      help="Total predicted streams divided by track count. Useful for comparing albums of different lengths on equal footing.")
-            c2.metric("Model confidence (±MAPE)", f"±{mape:.0f}%",
-                      help="Based on historical accuracy tested against albums the model never saw during training.")
-
-            lo_fmt = f"{pred * (1 - mape / 100):.0f}M"
-            hi_fmt = f"{pred * (1 + mape / 100):.0f}M"
-            album_label = f" ({album_name})" if album_name else ""
-
-            def g(text):
-                return f"<span style='color:{SPOTIFY_GREEN}; font-weight:700;'>{text}</span>"
-
-            st.markdown(
-                f"<div style='font-size:15px; line-height:1.7; color:#e0e0e0;'>"
-                f"The model expects <strong>{artist_name}</strong>{album_label}'s album to stream around "
-                f"{g(f'{pred:.0f}M')} times globally in its first week — an average of {g(f'{daily_avg:.1f}M')} "
-                f"streams per day. That works out to roughly {g(f'{pred / track_count:.1f}M')} per track. "
-                f"Based on the model's historical accuracy (plus or minus {g(f'{mape:.0f}%')}), a realistic range is "
-                f"{g(f'{lo_fmt} to {hi_fmt}')}."
-                f"</div>",
-                unsafe_allow_html=True
-            )
-            # Benchmark context
-            st.caption("For reference: Drake's Iceman did 450M in its first week. Olivia Rodrigo's album did 395M.")
-
-            st.markdown("")
-            st.caption("Note: your prediction is session only and won't affect the model.")
-
-            # Why this number — approximate contribution breakdown
-            with st.expander("🔍 Why this number?"):
-                st.caption(
-                    "Approximate view of which inputs pushed the prediction up or down, based on how far "
-                    "each value sits from a typical album in the training data, weighted by the model's "
-                    "feature importance. This is a simplified estimate, not an exact decomposition."
-                )
-                train_only = df[df['year'] <= 2024]
-                importances_dict = state['importances'].to_dict()
-                breakdown = compute_contribution_breakdown(params, importances_dict, train_only)
-                for _, row in breakdown.iterrows():
-                    bar_color = "#4ade80" if row['contribution'] > 0 else "#f87171"
-                    bar_width = abs(row['scaled']) * 50
-                    direction = "pushes prediction up" if row['contribution'] > 0 else "pushes prediction down"
-                    st.markdown(
-                        f"<div style='display:flex; align-items:center; gap:10px; margin-bottom:8px;'>"
-                        f"<div style='width:150px; font-size:12px; color:#b3b3b3;'>{row['feature']}</div>"
-                        f"<div style='flex:1; background:#1a1d24; border-radius:4px; height:10px; position:relative;'>"
-                        f"<div style='width:{bar_width}%; background:{bar_color}; height:10px; border-radius:4px;"
-                        f"{'margin-left:auto;' if row['contribution'] < 0 else ''}'></div>"
-                        f"</div>"
-                        f"<div style='width:130px; font-size:11px; color:#666;'>{direction}</div>"
-                        f"</div>",
-                        unsafe_allow_html=True
-                    )
-
-            # Share on X/Twitter
-            album_share = f"'s {album_name}" if album_name else "'s upcoming album"
-            share_text = (
-                f"I used the Spotify First-Week Global Streaming Predictor to estimate "
-                f"{artist_name}{album_share} will hit {pred:.0f}M streams in week 1 "
-                f"(range: {lo_fmt} to {hi_fmt}). "
-                f"Check it out: spotify-first-week-streaming-predictor.streamlit.app"
-            )
-            tweet_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(share_text)}"
-
-            share_col1, share_col2 = st.columns(2)
-            with share_col1:
-                st.markdown(
-                    f'<a href="{tweet_url}" target="_blank" style="display:inline-block; margin-top:10px; '
-                    f'background:#000; color:#fff; padding:8px 18px; border-radius:20px; '
-                    f'font-weight:600; font-size:13px; text-decoration:none; border:1px solid #333; width:100%; text-align:center; box-sizing:border-box;">'
-                    f'Share on X &nbsp;𝕏</a>',
-                    unsafe_allow_html=True
-                )
-            with share_col2:
-                try:
-                    img_buf = generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt)
-                    st.download_button(
-                        "Download image 🖼️",
-                        data=img_buf,
-                        file_name=f"{artist_name.replace(' ', '_')}_prediction.png",
-                        mime="image/png",
-                        use_container_width=True
-                    )
-                except Exception:
-                    pass
-    else:
         st.markdown(f"""
-        <div style="background:#13161d; border:1px solid #22262f; border-radius:14px; padding:24px 28px; color:#b3b3b3; font-size:14px; line-height:1.7;">
-            <div style="font-size:32px; margin-bottom:12px;">🎵</div>
-            Fill in the album details on the left and hit <strong style="color:#fff;">Predict first-week streams</strong> to see your estimate here.<br><br>
-            <span style="font-size:12px; color:#555;">The model will return a predicted stream count, a confidence range, and a plain-English breakdown of what the numbers mean.</span>
+        <div class="result-card" style="border-color:{card_border};">
+            <div style="color:#b3b3b3; font-size:14px; margin-bottom:4px;">Predicted first-week global streams</div>
+            <div style="color:{SPOTIFY_GREEN}; font-size:52px; font-weight:700; line-height:1.1;">{pred:.0f}M</div>
+            <div style="color:#b3b3b3; font-size:14px; margin-top:10px;">
+                Confidence range (±{mape:.0f}% MAPE): {lo_fmt} to {hi_fmt}
+            </div>
+            <div style="color:#6b7280; font-size:12.5px; margin-top:8px;">
+                Based on {mau_basis}
+            </div>
         </div>
         """, unsafe_allow_html=True)
 
-st.markdown(f"""
+        if conf_note:
+            st.warning(conf_note)
+
+        m1, m2, m3 = st.columns(3)
+        m1.metric("Streams per track", f"{pred / track_count:.1f}M",
+                  help="Total predicted streams divided by track count. Useful for comparing albums of different lengths on equal footing.")
+        m2.metric("Avg. streams per day", f"{daily_avg:.1f}M",
+                  help="Predicted first-week total spread evenly across seven days.")
+        m3.metric("Model confidence (±MAPE)", f"±{mape:.0f}%",
+                  help="Based on historical accuracy tested against albums the model never saw during training.")
+
+        def g(text):
+            return f"<span style='color:{SPOTIFY_GREEN}; font-weight:700;'>{text}</span>"
+
+        st.markdown(
+            f"<div style='font-size:15px; line-height:1.7; color:#e0e0e0; margin-top:12px;'>"
+            f"The model expects <strong>{artist_name}</strong>{album_label}'s album to stream around "
+            f"{g(f'{pred:.0f}M')} times globally in its first week, an average of {g(f'{daily_avg:.1f}M')} "
+            f"streams per day. That works out to roughly {g(f'{pred / track_count:.1f}M')} per track. "
+            f"Based on the model's historical accuracy (plus or minus {g(f'{mape:.0f}%')}), a realistic range is "
+            f"{g(f'{lo_fmt} to {hi_fmt}')}."
+            f"</div>",
+            unsafe_allow_html=True
+        )
+        st.caption("For reference: Drake's Iceman did 450M in its first week, Olivia Rodrigo's album did 395M, "
+                   "and Ariana Grande's Petal did 236M.")
+        st.caption("Note: your prediction is session only and will not affect the model.")
+
+        with st.expander("🔍 Why this number?"):
+            st.caption(
+                "Approximate view of which inputs pushed the prediction up or down, based on how far "
+                "each value sits from a typical album in the training data, weighted by the model's "
+                "feature importance. This is a simplified estimate, not an exact decomposition."
+            )
+            train_only = df[df['year'] <= TRAIN_YEAR_MAX]
+            importances_dict = state['importances'].to_dict()
+            breakdown = compute_contribution_breakdown(params, importances_dict, train_only)
+            for _, row in breakdown.iterrows():
+                bar_color = "#4ade80" if row['contribution'] > 0 else "#f87171"
+                bar_width = abs(row['scaled']) * 50
+                direction = "pushes prediction up" if row['contribution'] > 0 else "pushes prediction down"
+                st.markdown(
+                    f"<div style='display:flex; align-items:center; gap:10px; margin-bottom:8px;'>"
+                    f"<div style='width:190px; font-size:12px; color:#b3b3b3;'>{row['feature']}</div>"
+                    f"<div style='flex:1; background:#1a1d24; border-radius:4px; height:10px; position:relative;'>"
+                    f"<div style='width:{bar_width}%; background:{bar_color}; height:10px; border-radius:4px;"
+                    f"{'margin-left:auto;' if row['contribution'] < 0 else ''}'></div>"
+                    f"</div>"
+                    f"<div style='width:150px; font-size:11px; color:#666;'>{direction}</div>"
+                    f"</div>",
+                    unsafe_allow_html=True
+                )
+
+        album_share = f"'s {album_name}" if album_name else "'s upcoming album"
+        share_text = (
+            f"I used the Spotify First-Week Global Streaming Predictor to estimate "
+            f"{artist_name}{album_share} will hit {pred:.0f}M streams in week 1 "
+            f"(range: {lo_fmt} to {hi_fmt}, based on {mau_basis}). "
+            f"Check it out: spotify-first-week-streaming-predictor.streamlit.app"
+        )
+        tweet_url = f"https://twitter.com/intent/tweet?text={urllib.parse.quote(share_text)}"
+
+        share_col1, share_col2, _ = st.columns([1, 1, 2])
+        with share_col1:
+            st.markdown(
+                f'<a href="{tweet_url}" target="_blank" style="display:inline-block; margin-top:10px; '
+                f'background:#000; color:#fff; padding:8px 18px; border-radius:20px; '
+                f'font-weight:600; font-size:13px; text-decoration:none; border:1px solid #333; width:100%; text-align:center; box-sizing:border-box;">'
+                f'Share on X &nbsp;𝕏</a>',
+                unsafe_allow_html=True
+            )
+        with share_col2:
+            try:
+                img_buf = generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt,
+                                               basis_note=f"Based on {mau_basis}")
+                st.download_button(
+                    "Download image 🖼️",
+                    data=img_buf,
+                    file_name=f"{artist_name.replace(' ', '_')}_prediction.png",
+                    mime="image/png",
+                    use_container_width=True
+                )
+            except Exception:
+                pass
+    else:
+        st.markdown("""
+        <div style="background:#13161d; border:1px solid #22262f; border-radius:14px; padding:20px 26px; color:#b3b3b3; font-size:14px; line-height:1.7;">
+            <span style="font-size:20px; margin-right:8px;">🎵</span>
+            Fill in the album details below and hit <strong style="color:#fff;">Predict first-week streams</strong>. Your estimate will appear here, with a confidence range and a plain-English breakdown of what the numbers mean.
+        </div>
+        """, unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# Compare two artists
+# -----------------------------------------------------------------------------
+st.markdown("""
 <div class="section-divider">
     <div class="section-divider-line"></div>
-    <div style="text-align:center;">
-        <div class="section-divider-label">Compare two artists</div>
-    </div>
+    <div class="section-divider-label">Compare two artists</div>
     <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
 </div>
 """, unsafe_allow_html=True)
 
 with st.expander("🆚 Compare two artists side by side", expanded=False):
+    st.caption(f"Both sides use the release period selected above: {mau_basis}.")
     cmp_col1, cmp_col2 = st.columns(2)
     with cmp_col1:
         st.markdown("**Artist A**")
-        cmp_artist_a = st.selectbox("Artist", artists, key="cmp_a_artist")
+        cmp_artist_a = st.selectbox("Artist", artists, index=default_artist_index, key="cmp_a_artist")
         cmp_tracks_a = st.number_input("Track count", min_value=1, value=12, step=1, key="cmp_a_tracks")
         cmp_hype_a = st.slider("Hype score", 0.0, 10.0, 9.0, 0.5, key="cmp_a_hype")
         cmp_lead_a = st.number_input("Lead time (days)", min_value=0, value=21, step=1, key="cmp_a_lead")
         cmp_hh_a = st.toggle("Household name", value=True, key="cmp_a_hh")
     with cmp_col2:
         st.markdown("**Artist B**")
-        cmp_artist_b = st.selectbox("Artist", artists, index=min(1, len(artists) - 1), key="cmp_b_artist")
+        cmp_default_b = min(default_artist_index + 1, len(artists) - 1)
+        cmp_artist_b = st.selectbox("Artist", artists, index=cmp_default_b, key="cmp_b_artist")
         cmp_tracks_b = st.number_input("Track count", min_value=1, value=12, step=1, key="cmp_b_tracks")
         cmp_hype_b = st.slider("Hype score", 0.0, 10.0, 9.0, 0.5, key="cmp_b_hype")
         cmp_lead_b = st.number_input("Lead time (days)", min_value=0, value=21, step=1, key="cmp_b_lead")
@@ -786,15 +921,10 @@ with st.expander("🆚 Compare two artists side by side", expanded=False):
 
     if st.button("Compare predictions", use_container_width=True):
         def quick_predict(artist, tracks, hype, lead, hh):
-            h = artist_history(artist, mau)
+            h = artist_history(artist, mau, before_year=release_year)
             h['is_household_name'] = int(hh)
-            a_years = df[df['artist'] == artist].sort_values('year')
-            recent_year = int(a_years.iloc[-1]['year']) if len(a_years) else None
-            if artist in REFERENCE_HISTORY:
-                ref_year = REFERENCE_HISTORY[artist]['year']
-                if recent_year is None or ref_year > recent_year:
-                    recent_year = ref_year
-            yrs = int(2026 - recent_year) if recent_year else 0
+            recent_year = latest_release_year(artist, before_year=release_year)
+            yrs = max(0, int(release_year - recent_year)) if recent_year else 0
             p = [tracks, mau, hype, lead, 0, yrs,
                  h['prev_streams_per_mau'], h['trailing_avg_per_mau'], h['trailing_spt_per_mau'],
                  int(hh), int(hh) * tracks]
@@ -825,43 +955,107 @@ with st.expander("🆚 Compare two artists side by side", expanded=False):
             </div>
             """, unsafe_allow_html=True)
 
+# -----------------------------------------------------------------------------
+# Detail panels (moved off the sidebar)
+# -----------------------------------------------------------------------------
+st.markdown("""
+<div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Under the hood</div>
+    <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
+</div>
+""", unsafe_allow_html=True)
+
+with st.expander("🔍 How accurate is this model?"):
+    st.markdown(
+        f"The model was tested against albums it had **never seen during training**, "
+        f"the gold standard for checking whether a prediction tool actually works in the real world.\n\n"
+        f"Across those unseen albums it was off by **{HOLDOUT_MAPE:.1f}% on average**. "
+        f"For context, predicting music streams is inherently noisy. Viral moments, surprise drops "
+        f"and cultural timing can swing numbers by 2x to 3x in ways no model can fully anticipate."
+    )
+    hold_df = pd.DataFrame(state['hold_results'])
+    hold_df['pred'] = hold_df['pred'].round(0).astype(int)
+    hold_df['actual'] = hold_df['actual'].round(0).astype(int)
+    hold_df['err'] = hold_df['err'].round(1)
+    hold_df.columns = ['Album', 'Predicted (M)', 'Actual (M)', 'Error (%)']
+    st.caption("2025 albums, predicted before release and checked after:")
+    st.dataframe(hold_df, hide_index=True, use_container_width=True)
+    st.caption(f"Average error on these albums: {HOLDOUT_MAPE:.1f}%")
+
+with st.expander("✅ Real-world track record (2026)"):
+    st.markdown(
+        "These are 2026 albums with known outcomes. The model predicted them, "
+        "then they were checked against reality once the actual numbers came in."
+    )
+    val_df = pd.DataFrame(state['val_results'])
+    val_df['pred'] = val_df['pred'].round(0).astype(int)
+    val_df['actual'] = val_df['actual'].round(0).astype(int)
+    val_df['err'] = val_df['err'].round(1)
+    val_df.columns = ['Album', 'Predicted (M)', 'Actual (M)', 'Error (%)']
+    st.dataframe(val_df, hide_index=True, use_container_width=True)
+
+with st.expander("⚙️ What factors drive the prediction?"):
+    st.markdown(
+        "These are the inputs the model relies on most heavily. "
+        "The higher the number, the more that factor influences the prediction."
+    )
+    imp_df = state['importances'].reset_index()
+    imp_df.columns = ['Factor', 'Influence']
+    friendly_factors = {
+        'trailing_avg_per_mau': "Artist's recent streaming average",
+        'prev_streams_per_mau': "Previous album's first-week streams",
+        'spotify_mau': 'Spotify platform size (era)',
+        'hype_score': 'Pre-release buzz (your rating)',
+        'trailing_spt_per_mau': 'Avg. streams per track recently',
+        'lead_time': 'Days between announcement and release',
+        'household_x_tracks': 'Household name x track count',
+        'track_count': 'Number of tracks',
+        'feature_track_count': 'Featured artist tracks',
+        'years_since_last_album': 'Gap since last album',
+        'is_household_name': 'Household-name status',
+    }
+    imp_df['Factor'] = imp_df['Factor'].map(friendly_factors).fillna(imp_df['Factor'])
+    imp_df['Influence'] = imp_df['Influence'].round(3)
+    st.dataframe(imp_df, hide_index=True, use_container_width=True)
+
 with st.expander("📖 How does this model work?"):
-    st.markdown("""
-This application uses a **Random Forest Regressor** trained on 49 major album releases from 2015 to 2026,
-plus 7 additional albums held out purely for testing (never used in training).
+    st.markdown(f"""
+This application uses a **Random Forest Regressor** trained on {N_TRAIN} major album releases from
+{TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}, plus {N_HOLD} albums from 2025 and {N_VAL} from 2026 held out
+purely for testing (never used in training).
 
 **The core idea:** an artist's future first-week performance is mostly explained by their recent
-streaming trajectory — how their last album did, how their trailing average has trended, and how big
+streaming trajectory. How their last album did, how their trailing average has trended, and how big
 Spotify's platform was at the time. Those three factors alone account for roughly 70% of the model's
 decision-making.
 
-**Why Random Forest specifically?** With only 49 training rows, simpler models like Ridge regression
-actually score *better* on paper (higher R²) but performed *worse* when tested against albums they'd
-never seen — a sign they were fitting noise rather than a real pattern. Random Forest, constrained to
+**Why Random Forest specifically?** With only {N_TRAIN} training rows, simpler models like Ridge regression
+actually score *better* on paper (higher R²) but performed *worse* when tested against albums they had
+never seen, a sign they were fitting noise rather than a real pattern. Random Forest, constrained to
 shallow trees, generalized better in that same head-to-head test, which is the more honest way to judge
 a model like this.
 
 **How accuracy is measured:** every prediction shown in this app comes with a confidence range based on
-Leave-One-Out Cross-Validation — training on 48 albums and testing on the 1 left out, repeated 49 times.
-That gives an honest read on how the model performs on data it hasn't seen, without needing a much
-larger dataset.
+Leave-One-Out Cross-Validation. That means training on {N_TRAIN - 1} albums and testing on the 1 left out,
+repeated {N_TRAIN} times. It gives an honest read on how the model performs on data it has not seen,
+without needing a much larger dataset.
 
-**What the model doesn't know:** things like label disputes, surprise tour announcements, viral TikTok
-moments, or genuine cultural narrative are deliberately left out. They're real factors, but they can't be
-reliably quantified across just 49 albums without the model latching onto coincidence instead of signal.
+**What the model does not know:** things like label disputes, surprise tour announcements, viral TikTok
+moments, or genuine cultural narrative are deliberately left out. They are real factors, but they cannot be
+reliably quantified across just {N_TRAIN} albums without the model latching onto coincidence instead of signal.
 
-**Known limitations:** the model tends to over-predict for artists showing signs of declining momentum
-(it currently has no explicit signal for that), and surprise album drops with little to no announcement
-lead time are harder to model accurately than traditional promotional cycles.
+**Known limitations:** the model tends to over-predict for artists showing signs of declining momentum,
+since it currently has no explicit signal for that. Ariana Grande's *Petal* is the clearest recent example:
+the model called 408M and the album opened at 236.1M, a miss of roughly 73%. Surprise album drops with
+little to no announcement lead time are also harder to model accurately than traditional promotional cycles.
     """)
 
 st.markdown(f"""
 <div class="app-footer">
-    Built with Spotify streaming data &nbsp;·&nbsp;
-    <span>Random Forest model</span> &nbsp;·&nbsp;
-    49 training albums (2015 to 2026) &nbsp;·&nbsp;
-    Validated on unseen releases &nbsp;·&nbsp;
-    <span>±{state['mape']:.0f}% avg. error</span> &nbsp;·&nbsp;
-    Last updated June 2026
+    <span>Built with Spotify streaming data</span>
+    <span class="accent">Random Forest model</span>
+    <span>{N_TRAIN} training albums ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX})</span>
+    <span>Last updated October 2026</span>
 </div>
 """, unsafe_allow_html=True)
