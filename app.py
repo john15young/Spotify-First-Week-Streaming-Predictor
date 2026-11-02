@@ -176,72 +176,76 @@ st.markdown("""
 # =============================================================================
 # DATA - same CSV used by the original script (source of truth)
 # =============================================================================
-CSV_CONTENT = """artist,album,year,genre,track_count,spotify_mau,hype_score,lead_time,album_type,feature_track_count,years_since_last_album,prev_album_streams,first_week_streams,is_household_name
-Ed Sheeran,Divide,2017,0,16,120,9.0,21,0,0,4,0,375,1
-Ed Sheeran,Equals,2021,0,14,365,8.5,21,0,0,4,375,161,1
-Drake,Scorpion,2018,1,25,207,10.0,7,0,3,1,0,559,1
-Drake,CLB,2021,1,21,365,9.5,14,0,12,3,559,496,1
-Drake,FATD,2023,1,23,574,8.0,14,0,10,2,496,405,1
-Travis Scott,ASTROWORLD,2018,1,17,207,9.5,14,0,11,3,0,257,0
-Travis Scott,Utopia,2023,1,19,574,10.0,14,0,13,5,257,457,0
-Eminem,Revival,2017,1,19,120,8.0,45,0,8,4,0,117,1
-Eminem,Kamikaze,2018,1,13,207,10.0,0,0,4,1,117,238,1
-Eminem,TheDeathOfSlimShady,2024,1,19,640,9.0,45,0,8,6,238,254,1
-The Weeknd,Starboy,2016,2,18,100,10.0,30,0,5,1,0,223,1
-The Weeknd,AfterHours,2020,2,14,299,9.0,21,0,0,2,223,265,1
-The Weeknd,HUT,2024,2,22,640,10.0,21,0,7,4,265,302,1
-Justin Bieber,Purpose,2015,0,13,80,10.0,60,0,4,3,0,205,1
-Justin Bieber,Justice,2021,0,16,365,8.0,14,0,8,2,205,252,1
-SZA,SOS,2022,2,23,489,9.5,21,0,4,5,125,336,0
-Taylor Swift,Midnights,2022,0,20,489,10.0,21,0,1,3,0,776,1
-Taylor Swift,1989TV,2023,0,21,574,9.0,21,2,0,1,776,582,1
-Taylor Swift,TTPD,2024,0,31,640,10.0,28,0,2,1,582,1173,1
-Sabrina Carpenter,ShortNSweet,2024,0,12,640,8.0,21,0,0,3,0,352,0
-Kendrick Lamar,DAMN,2017,1,14,120,10.0,14,0,3,2,0,227,1
-Kendrick Lamar,MrMorale,2022,1,19,489,9.5,25,0,7,5,227,343,1
-Kendrick Lamar,GNX,2024,1,12,640,10.0,0,0,4,2,343,363,1
-LilWayne,CarterV,2018,1,23,207,10.0,7,0,10,7,0,285,0
-Ariana Grande,ThanksUNext,2019,0,12,248,10.0,21,0,0,1,0,361,1
-Ariana Grande,EternalSunshine,2024,0,13,640,9.0,28,0,0,5,361,342,1
-Olivia Rodrigo,SOUR,2021,0,11,365,9.0,28,0,0,0,0,385,1
-Olivia Rodrigo,GUTS,2023,0,12,574,9.0,45,0,0,2,385,284,1
-Billie Eilish,HMHAS,2024,0,10,640,9.0,45,0,0,5,0,386,1
-Beyonce,Renaissance,2022,2,16,489,9.5,43,0,2,6,0,173,1
-Beyonce,CowboyCarter,2024,4,27,640,9.5,14,0,11,2,173,316,1
-Dua Lipa,FutureNostalgia,2020,0,13,299,8.5,21,0,2,4,0,294,0
-Dua Lipa,RadicalOptimism,2024,0,11,640,7.5,45,0,0,4,294,94,0
-Adele,30,2021,0,12,365,10.0,45,0,0,6,0,310,1
-Bad Bunny,UnVeranoSinTi,2022,3,23,489,10.0,7,0,8,1,0,503,1
-Bad Bunny,NadieSabe,2023,3,22,574,9.5,3,0,8,1,503,469,1
-Harry Styles,FineLine,2019,0,12,248,9.0,40,0,0,0,0,155,1
-Harry Styles,HarrysHouse,2022,0,13,489,9.5,52,0,0,2,155,440,1
-Post Malone,BBandB,2018,1,18,207,10.0,21,0,5,1,0,411,1
-Post Malone,HollywoodsBleeding,2019,1,17,248,10.0,14,0,7,1,411,379,1
-Karol G,MananaSeraBonito,2023,3,17,574,9.5,31,0,10,2,0,203,0
-21 Savage,AmericanDream,2024,1,15,640,9.5,7,0,10,3,0,187,0
-Tyler The Creator,CHROMAKOPIA,2024,1,14,640,10.0,11,0,7,3,0,340,0
-Kanye West,DONDA,2021,1,27,365,10.0,60,0,23,6,0,442,1
-Kanye West,VULTURES1,2024,1,15,640,9.0,30,0,0,3,442,251,1
-Tate McRae,ThinkLater,2023,0,14,574,9.0,30,0,0,2,0,115,0
-Metro Boomin,WDTY,2024,1,17,640,9.0,14,3,5,2,0,257,0
-Morgan Wallen,Dangerous,2021,4,30,365,8.0,60,0,2,3,0,161,0
-Juice WRLD,LegendsNeverDie,2020,1,22,299,10.0,7,0,5,1,0,303,0
-Taylor Swift,LifeOfAShowgirl,2025,0,12,715,10.0,45,0,1,1,1173,887,1
-Sabrina Carpenter,MansBestFriend,2025,0,13,715,9.5,30,0,0,1,352,297,0
-Morgan Wallen,ImTheProblem,2025,4,37,715,9.5,45,0,5,2,161,253,0
-Tate McRae,SoCloseToWhat,2025,0,16,715,10.0,99,0,2,2,115,188,0
-Playboi Carti,MUSIC,2025,1,30,715,10.0,15,0,12,5,160,490,0
-Lady Gaga,Mayhem,2025,0,14,715,9.0,45,0,2,5,173,219,1
-Justin Bieber,Swag,2025,0,21,715,8.0,1,1,7,4,252,276.8,1
-Harry Styles,KissAllTheTime,2026,0,14,761,9.5,40,0,0,4,440,205,1"""
+CSV_CONTENT = """artist,album,year,track_count,spotify_mau,lead_time,feature_track_count,years_since_last_album,prev_album_streams,first_week_streams,is_household_name
+Ed Sheeran,Divide,2017,16,120,50,0,4,0,375,1
+Ed Sheeran,Equals,2021,14,365,71,0,4,375,161,1
+Drake,Scorpion,2018,25,207,16,3,1,0,559,1
+Drake,CLB,2021,21,365,7,12,3,559,496,1
+Drake,FATD,2023,23,574,14,10,2,496,405,1
+Travis Scott,ASTROWORLD,2018,17,207,4,11,3,0,257,0
+Travis Scott,Utopia,2023,19,574,6,13,5,257,457,0
+Eminem,Revival,2017,19,120,17,8,4,0,117,1
+Eminem,Kamikaze,2018,13,207,0,4,1,117,238,1
+Eminem,TheDeathOfSlimShady,2024,19,640,11,8,6,238,254,1
+The Weeknd,Starboy,2016,18,100,65,5,1,0,223,1
+The Weeknd,AfterHours,2020,14,299,30,0,2,223,265,1
+The Weeknd,HUT,2025,22,715,65,7,4,265,302,1
+Justin Bieber,Purpose,2015,13,80,42,4,3,0,205,1
+Justin Bieber,Justice,2021,16,365,21,8,2,205,252,1
+SZA,SOS,2022,23,489,6,4,5,125,336,0
+Taylor Swift,Midnights,2022,20,489,54,1,3,0,776,1
+Taylor Swift,1989TV,2023,21,574,79,0,1,776,582,1
+Taylor Swift,TTPD,2024,31,640,75,2,1,582,1173,1
+Sabrina Carpenter,ShortNSweet,2024,12,640,81,0,3,0,352,0
+Kendrick Lamar,DAMN,2017,14,120,3,3,2,0,227,1
+Kendrick Lamar,MrMorale,2022,19,489,25,7,5,227,343,1
+Kendrick Lamar,GNX,2024,12,640,0,4,2,343,363,1
+LilWayne,CarterV,2018,23,207,2,10,7,0,285,0
+Ariana Grande,ThanksUNext,2019,12,248,17,0,1,0,361,1
+Ariana Grande,EternalSunshine,2024,13,640,51,0,5,361,342,1
+Olivia Rodrigo,SOUR,2021,11,365,50,0,0,0,385,1
+Olivia Rodrigo,GUTS,2023,12,574,74,0,2,385,284,1
+Billie Eilish,HMHAS,2024,10,640,39,0,5,0,386,1
+Beyonce,Renaissance,2022,16,489,43,2,6,0,173,1
+Beyonce,CowboyCarter,2024,27,640,47,11,2,173,316,1
+Dua Lipa,FutureNostalgia,2020,13,299,58,2,4,0,294,0
+Dua Lipa,RadicalOptimism,2024,11,640,51,0,4,294,94,0
+Adele,30,2021,12,365,37,0,6,0,310,1
+Bad Bunny,UnVeranoSinTi,2022,23,489,4,8,1,0,503,1
+Bad Bunny,NadieSabe,2023,22,574,4,8,1,503,469,1
+Harry Styles,FineLine,2019,12,248,39,0,0,0,155,1
+Harry Styles,HarrysHouse,2022,13,489,58,0,2,155,440,1
+Post Malone,BBandB,2018,18,207,23,5,1,0,411,1
+Post Malone,HollywoodsBleeding,2019,17,248,11,7,1,411,379,1
+Karol G,MananaSeraBonito,2023,17,574,14,10,2,0,203,0
+21 Savage,AmericanDream,2024,15,640,3,10,3,0,187,0
+Tyler The Creator,CHROMAKOPIA,2024,14,640,11,7,3,0,340,0
+Kanye West,DONDA,2021,27,365,23,23,6,0,442,1
+Kanye West,VULTURES1,2024,15,640,24,0,3,442,251,1
+Tate McRae,ThinkLater,2023,14,574,32,0,2,0,115,0
+Metro Boomin,WDTY,2024,17,640,14,5,2,0,257,0
+Morgan Wallen,Dangerous,2021,30,365,58,2,3,0,161,0
+Juice WRLD,LegendsNeverDie,2020,22,299,4,5,1,0,303,0
+Taylor Swift,LifeOfAShowgirl,2025,12,715,52,1,1,1173,887,1
+Sabrina Carpenter,MansBestFriend,2025,13,715,79,0,1,352,297,0
+Morgan Wallen,ImTheProblem,2025,37,715,57,5,2,161,253,0
+Tate McRae,SoCloseToWhat,2025,16,715,99,2,2,115,188,0
+Playboi Carti,MUSIC,2025,30,715,2,12,5,160,490,0
+Lady Gaga,Mayhem,2025,14,715,39,2,5,173,219,1
+Justin Bieber,Swag,2025,21,715,1,7,4,252,276.8,1
+Harry Styles,KissAllTheTime,2026,14,761,50,0,4,440,205,1"""
 
 # hype_score was dropped: it was scored retrospectively, after the albums' results were
 # known, so it carried hindsight that cross-validation cannot detect (the leak lives inside
-# the feature's values, not across the train/test split). Removing it barely moved the
-# cross-validated metrics and improved the 2025 holdout, which is what you would expect from
-# a contaminated predictor. The three correlated history features (previous album, trailing
+# the feature's values, not across the train/test split). Removing it made the cross-validated
+# metrics worse and the held-out 2025 albums better, which is what you would expect from a
+# contaminated predictor. The three correlated history features (previous album, trailing
 # average, trailing streams per track) are collapsed into one, since dropping any single one
-# changed almost nothing: they were three versions of the same signal.
+# left accuracy roughly unchanged: they were three versions of the same signal.
+#
+# lead_time = days from the first official announcement of the release date to the actual
+# release. Every value was re-checked against announcement dates in October 2026. Hurry Up
+# Tomorrow (released Jan 31, 2025) is carried as a 2025 holdout album.
 FEATS = ['track_count', 'spotify_mau', 'lead_time', 'feature_track_count',
          'years_since_last_album', 'history_per_mau',
          'is_household_name', 'household_x_tracks']
@@ -317,6 +321,9 @@ def load_and_train():
     r2_real = r2_score(ra, rp)
     mape = np.mean(np.abs(rp - ra) / ra * 100)
     mae = np.mean(np.abs(rp - ra))
+    # Naive benchmark: always guess the median first-week total of the other albums.
+    base_pred = np.array([np.median(np.delete(ra, i)) for i in range(len(ra))])
+    base_mape = np.mean(np.abs(base_pred - ra) / ra * 100)
 
     model = RandomForestRegressor(**MP)
     model.fit(X, y)
@@ -341,11 +348,14 @@ def load_and_train():
         val_results.append({'album': f"{r['artist']} — {r['album']}", 'pred': p,
                              'actual': r['first_week_streams'], 'err': e})
 
+    base_hold = float(np.mean([abs(np.median(ra) - r['actual']) / r['actual'] * 100 for r in hold_results])) if hold_results else float('nan')
+
     importances = pd.Series(model.feature_importances_, index=FEATS).sort_values(ascending=False)
 
     return {
         'df': df, 'model': model, 'gm': gm, 'gm_spt': gm_spt,
         'r2': r2, 'r2_real': r2_real, 'mape': mape, 'mae': mae,
+        'base_mape': base_mape, 'base_hold': base_hold,
         'hold_results': hold_results, 'val_results': val_results,
         'importances': importances, 'train_size': len(train)
     }
@@ -359,6 +369,7 @@ gm, gm_spt = state['gm'], state['gm_spt']
 N_TRAIN = state['train_size']
 N_HOLD = len(state['hold_results'])
 N_VAL = len(state['val_results'])
+BASE_MAPE, BASE_HOLD = state['base_mape'], state['base_hold']
 HOLDOUT_MAPE = float(np.mean([r['err'] for r in state['hold_results']])) if N_HOLD else float('nan')
 
 # Reference-only prior-album data. Used ONLY to correct "years since last album" and
@@ -567,7 +578,7 @@ st.markdown(f"""
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🔧</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Roadmap: mid-tier and non-English artists to correct upward bias, a surprise-release flag, and an objective buzz proxy such as lead single chart position.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Roadmap: broader artist coverage and additional pre-release signals to improve accuracy.</p>
     </div>
 </div>
 <p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
@@ -639,8 +650,9 @@ g3.metric(
     help=(f"Measured on log(streams ÷ users), so it scores how well the model places an album's size "
           f"relative to Spotify's audience at the time, not its raw stream count. Computed by "
           f"leave-one-out cross-validation, on albums the model had not seen.\n\n"
-          f"On the raw stream scale the same predictions score about {state['r2_real']:.2f}, because a "
-          f"few outsized albums account for most of the spread and the model under-predicts them. "
+          f"On the raw stream scale the same predictions score about {state['r2_real']:.2f}. A score at or "
+          f"below zero there means the model is no better than always guessing the average album's raw "
+          f"stream count, because a few outsized albums account for most of the spread. "
           f"Average prediction error is the more intuitive gauge of everyday accuracy."))
 g4.metric(
     "Avg. prediction error", f"{state['mape']:.1f}%",
@@ -660,8 +672,6 @@ st.markdown("""
     <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
 </div>
 """, unsafe_allow_html=True)
-
-prediction_slot = st.container()
 
 # -----------------------------------------------------------------------------
 # Album details (full width)
@@ -741,8 +751,8 @@ with t_col:
         help="Total number of tracks on the album, including interludes. Check the official pre-save or announced tracklist.")
 with l_col:
     lead_time = st.number_input(
-        "Lead time (days)", min_value=0, value=21, step=1,
-        help="Number of days between the official album announcement and the release date. If announced and released the same day, enter 0. A standard campaign is 3 to 6 weeks (21 to 42 days).")
+        "Lead time (days)", min_value=0, value=30, step=1,
+        help="Days from when the release date was first officially announced to the release date. If it was announced and released the same day, enter 0. Across the albums in this dataset the middle half ran from about 1.5 weeks (11 days) to about 7.5 weeks (52 days), with a median of 30.")
 with f_col:
     feature_track_count = st.number_input(
         "Featured artist tracks", min_value=0, value=0, step=1,
@@ -767,9 +777,10 @@ with st.expander("Auto-filled from artist history (dataset medians used if no hi
     st.write(f"Combined history signal used by the model: **{hist['history_per_mau'] * mau:.0f}M**")
 
 predict_clicked = st.button("Predict first-week streams", type="primary", use_container_width=True)
+prediction_slot = st.container()
 
 # -----------------------------------------------------------------------------
-# Render the prediction into the slot above the inputs
+# Render the prediction directly below the Predict button
 # -----------------------------------------------------------------------------
 with prediction_slot:
     if predict_clicked:
@@ -900,7 +911,7 @@ with prediction_slot:
         st.markdown("""
         <div style="background:#13161d; border:1px solid #22262f; border-radius:14px; padding:20px 26px; color:#b3b3b3; font-size:14px; line-height:1.7;">
             <span style="font-size:20px; margin-right:8px;">🎵</span>
-            Fill in the album details below and hit <strong style="color:#fff;">Predict first-week streams</strong>. Your estimate will appear here, with a confidence range and a plain-English breakdown of what the numbers mean.
+            Fill in the album details above and hit <strong style="color:#fff;">Predict first-week streams</strong>. Your estimate will appear here, with a confidence range and a plain-English breakdown of what the numbers mean.
         </div>
         """, unsafe_allow_html=True)
 
@@ -920,6 +931,7 @@ with st.expander("🔍 How accurate is this model?"):
         f"The model was tested against albums it had **never seen during training**, "
         f"the gold standard for checking whether a prediction tool actually works in the real world.\n\n"
         f"Across those unseen albums it was off by **{HOLDOUT_MAPE:.1f}% on average**. "
+        f"For comparison, always guessing the median album would have been off by {BASE_HOLD:.1f}% on the same albums. "
         f"For context, predicting music streams is inherently noisy. Viral moments, surprise drops "
         f"and cultural timing can swing numbers by 2x to 3x in ways no model can fully anticipate."
     )
@@ -928,7 +940,7 @@ with st.expander("🔍 How accurate is this model?"):
     hold_df['actual'] = hold_df['actual'].round(0).astype(int)
     hold_df['err'] = hold_df['err'].round(1)
     hold_df.columns = ['Album', 'Predicted (M)', 'Actual (M)', 'Error (%)']
-    st.caption("2025 albums, predicted before release and checked after:")
+    st.caption("2025 albums the model never saw in training, predicted and then checked against the real numbers:")
     st.dataframe(hold_df, hide_index=True, use_container_width=True)
     st.caption(f"Average error on these albums: {HOLDOUT_MAPE:.1f}%")
 
@@ -954,7 +966,7 @@ with st.expander("⚙️ What factors drive the prediction?"):
     friendly_factors = {
         'history_per_mau': "Artist's streaming history (last album + career avg.)",
         'spotify_mau': 'Spotify platform size (era)',
-        'lead_time': 'Days between announcement and release',
+        'lead_time': 'Days from release-date announcement to release',
         'household_x_tracks': 'Household name x track count',
         'track_count': 'Number of tracks',
         'feature_track_count': 'Featured artist tracks',
@@ -975,20 +987,23 @@ purely for testing (never used in training).
 streaming trajectory, combined with how big Spotify's platform was at the time. Those two signals do
 most of the work.
 
-**A feature that had to be removed:** the model originally included a hand-assigned "hype score" for
+**Two inputs that had to be fixed:** the model originally included a hand-assigned "hype score" for
 pre-release buzz, and it was the single strongest predictor. The problem was that those scores had
 been assigned *after* the albums came out, so they carried hindsight the model could exploit.
 Cross-validation cannot catch that, because the contamination sits inside the feature's values rather
-than across the train/test split. Dropping it barely changed the cross-validated numbers and actually
-improved performance on the held-out 2025 albums, which is the signature of a leaky predictor. Three
+than across the train/test split. Dropping it made the cross-validated numbers worse and the held-out
+2025 albums better, which is the signature of a leaky predictor. Lead times had a different problem:
+they were first entered from memory, and when re-checked against announcement dates most of them
+changed, many by a month or more. The old values happened to line up with results, while the verified
+ones carry almost no signal on their own, so the model's accuracy figures got worse. Three
 near-duplicate history features were also collapsed into one, since removing any individual one
-changed almost nothing.
+left accuracy roughly unchanged.
 
-**Why Random Forest specifically?** With only {N_TRAIN} training rows, simpler models like Ridge regression
-actually score *better* on paper (higher R²) but performed *worse* when tested against albums they had
-never seen, a sign they were fitting noise rather than a real pattern. Random Forest, constrained to
-shallow trees, generalized better in that same head-to-head test, which is the more honest way to judge
-a model like this.
+**Why Random Forest specifically?** With only {N_TRAIN} training rows, simpler models like Ridge and
+Lasso regression actually score *better* on cross-validation (higher R²), but did worse on the 2025
+albums they had never seen. Random Forest, constrained to shallow trees, held up better there. With
+only {N_HOLD} held-out albums that is suggestive rather than conclusive, but it is the more honest way
+to judge a model like this.
 
 **How accuracy is measured:** every prediction shown in this app comes with a confidence range based on
 Leave-One-Out Cross-Validation. That means training on {N_TRAIN - 1} albums and testing on the 1 left out,
@@ -1005,9 +1020,11 @@ the model called 408M and the album opened at 236.1M, a miss of roughly 73%. Tha
 every feature set tested, so it reflects a real blind spot rather than one bad input. Surprise album drops
 with little to no announcement lead time are also harder to model than traditional promotional cycles.
 
-**The honest headline:** on the raw stream scale this model beats "always guess the average album" by a
-modest margin, and {N_TRAIN} training rows against {len(FEATS)} features is thin. Treat its output as a
-ballpark for how an album is likely to open, not a precise forecast.
+**The honest headline:** this model is not clearly better than a simple guess. Always guessing the
+median album would be off by {BASE_MAPE:.0f}% on average across the training albums (the model: {state['mape']:.0f}%)
+and by {BASE_HOLD:.0f}% on the 2025 albums (the model: {HOLDOUT_MAPE:.0f}%). On the raw stream scale it does
+not beat guessing the average. {N_TRAIN} training rows against {len(FEATS)} features is thin. Treat its output
+as a ballpark for how an album is likely to open, not a precise forecast.
     """)
 
 st.markdown(f"""
