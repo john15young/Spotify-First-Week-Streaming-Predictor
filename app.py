@@ -679,30 +679,11 @@ st.markdown(
 )
 
 st.markdown(f"""
-<div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px;">
-    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
-        <div style="font-size:22px; margin-bottom:8px;">📊</div>
-        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">What it does</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for major album releases, using a Ridge regression trained on {N_TRAIN} albums ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). Predicted ahead of three summer 2026 releases, two of which landed within 7%.</p>
-    </div>
-    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
-        <div style="font-size:22px; margin-bottom:8px;">🎯</div>
-        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">How to use it</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, pick the release period, and hit Predict. Artist streaming history is auto-filled, so you only need to supply the album-specific inputs like track count and lead time.</p>
-    </div>
-    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
-        <div style="font-size:22px; margin-bottom:8px;">🔧</div>
-        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0 0 6px; line-height:1.6;">What's planned next:</p>
-        <ul style="font-size:12px; color:#b3b3b3; margin:0; padding-left:16px; line-height:1.6;">
-            <li>Add every new 2026 and 2027 release as a fresh test, to see if the model really works on new albums.</li>
-            <li>Add more albums, especially from newer and smaller artists.</li>
-            <li>Better handling of surprise releases and of artists whose last album opened far below the one before.</li>
-            <li>Use early signals before release, like how the lead single performs.</li>
-            <li>Fill in missing previous-album numbers for older artists.</li>
-        </ul>
-    </div>
-</div>
+<p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
+Estimate how many first-week Spotify streams a major album will get, based on the artist's track record, the number of tracks and guest features, and how much notice fans were given.
+It is a Ridge regression trained on {N_TRAIN} albums from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}.
+Treat the result as a rough ballpark: its typical miss is about a third, and on 2026 albums it did no better than a simple guess.
+</p>
 <p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
 """, unsafe_allow_html=True)
 
@@ -1096,6 +1077,34 @@ st.markdown(
     f"middle album. That is no better than the plain guess, so the earlier figures above are likely too "
     f"optimistic. Details are under the 2026 track record below.</p>",
     unsafe_allow_html=True)
+
+st.markdown("""
+<div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">About this app</div>
+    <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
+</div>
+""", unsafe_allow_html=True)
+
+st.markdown(f"""
+<div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; margin-bottom:20px;">
+    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:22px; margin-bottom:8px;">📊</div>
+        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">What it does</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for major album releases, using a Ridge regression trained on {N_TRAIN} albums ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). Predicted ahead of three summer 2026 releases, two of which landed within 7%.</p>
+    </div>
+    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:22px; margin-bottom:8px;">🎯</div>
+        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">How to use it</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, pick the release period, and hit Predict. Artist streaming history is auto-filled, so you only need to supply the album-specific inputs like track count and lead time.</p>
+    </div>
+    <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:22px; margin-bottom:8px;">🔧</div>
+        <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Planned next: testing every new 2026 and 2027 release as a fresh check, adding more albums from newer and smaller artists, better handling of surprise releases and fading artists, using early signals like the lead single, and filling in missing previous-album numbers.</p>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
 # Detail panels (moved off the sidebar)
