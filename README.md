@@ -1,8 +1,8 @@
-# Predicting First-Week Spotify Streams with Random Forest
+# Predicting First-Week Spotify Streams with Ridge Regression
 
 ## Project Overview
 
-A machine learning framework for forecasting first-week Spotify global streaming performance for major album releases. Uses a `RandomForestRegressor` trained on 91 verified historical albums (2015 to 2024), with Leave-One-Out Cross-Validation, platform-size-adjusted features, and a temporal holdout of 20 albums from 2025. All stream figures verified via Spotify Charts.
+A machine learning framework for forecasting first-week Spotify global streaming performance for major album releases. Uses a Ridge regression trained on 91 verified historical albums (2015 to 2024), with Leave-One-Out Cross-Validation, platform-size-adjusted features, a debut-artist flag, and a temporal holdout of 20 albums from 2025. All stream figures verified via Spotify Charts.
 
 The project's central test is a case study on three summer 2026 albums: each predicted ahead of its release, then checked against the actual first-week figure.
 
@@ -39,6 +39,7 @@ A note on scope: the 2025 holdout of 20 albums is the model's out-of-sample test
 | `spotify_mau` | Platform-wide Monthly Active Users. Annual figure from Spotify investor filings, identical for all albums in a given year |
 | `lead_time` | Days from the first official release-date announcement to the actual release |
 | `history_per_mau` | Artist history signal: prior album's first-week streams and career average, MAU-normalized |
+| `has_hist` | 1 if a real previous-album first-week figure exists for the artist, 0 if the fallback value stands in for one (debuts, new artists, unknown priors) |
 | `is_household_name` | Binary flag for global superstar name recognition |
 | `first_week_streams` | Target. First-week Spotify global streams (M) |
 
@@ -62,11 +63,19 @@ Predictions are pinned to the MAU of the album's release period, not the current
 
 ### Model
 
-`RandomForestRegressor` (`n_estimators=200, max_depth=4, min_samples_leaf=3`), compared against Ridge, Lasso, ElasticNet, SVR, GBM, and XGBoost. With the platform-size adjustment in place, RF is ahead of the linear models in cross-validation, but by a small margin: a typical error of 39.7% against 41.2 to 42.0% for Ridge, Lasso and ElasticNet. On the 2025 holdout the linear models score better on average error (about 56% against 71.3% for RF using the app's averaging, or 60.7% averaged the cross-validation way). I chose RF on cross-validation alone, as set out in advance, but the holdout is a reminder that the edge is thin. Constrained depth and leaf size limit overfitting.
+Ridge regression on standardized features (alpha 1.0, scikit-learn's default, fixed in advance and not tuned), predicting the log target above. I compared it with a Random Forest (200 trees, depth 4, leaf size 3), Lasso and ElasticNet, and chose by leave-one-out cross-validation alone.
 
-XGBoost clearly underperformed at 66 training rows. The dataset has now passed 80 rows, so it is due for a re-test.
+Before the debut flag existed, the Random Forest was ahead by a small margin (typical error 39.7% against 41.2% to 42.0% for the linear models). The flag changed that. It lowers the forest's typical error only a little but takes Ridge from 41.2% to 32.1%. A linear model can apply one percentage drop to every album with no history, while a tree needs enough albums in a leaf to learn it.
 
-**Top features**: the household-name interaction (about 39%), `history_per_mau` (about 18%), `lead_time` (about 12%), and `years_since_last_album` (about 10%). Once the platform-size adjustment is weakened, `spotify_mau` itself carries modest weight (about 8%). The model is mostly answering "how big is this artist, and how big was the platform."
+| Model, 9 features | LOO typical | LOO average | Leave-one-artist-out typical | 2025 holdout typical | 2025 holdout average |
+|---|---|---|---|---|---|
+| Ridge | 32.1% | 58.8% | 33.4% | 26.1% | 41.9% |
+| Random Forest (three-seed average) | 38.9% | 61.0% | 39.5% | 40.1% | 63.6% |
+| "Always guess the median" | 43.8% | 85.6% | 45.3% | 55.4% | 76.4% |
+
+Lasso (36.0%) and ElasticNet (33.9%) fall between the two in leave-one-out typical error. Ridge is not sensitive to its one setting: alpha from 0.1 to 10 gives a typical error of 32.9% to 36.6%. XGBoost and gradient boosting underperformed at 66 rows and have not been re-tested with the flag.
+
+**Weights** (standardized coefficients; positive raises the prediction): `has_hist` +0.31, household name × tracks +0.21, `feature_track_count` -0.12, `track_count` +0.11, `history_per_mau` +0.09, `spotify_mau` -0.06, `is_household_name` -0.05, `years_since_last_album` +0.03, `lead_time` -0.03. In plain terms the model is mostly asking whether the artist has a track record and how big their name is. `lead_time` has almost no weight, but dropping it still costs about 1.5 points, so it stays.
 
 ---
 
@@ -74,45 +83,50 @@ XGBoost clearly underperformed at 66 training rows. The dataset has now passed 8
 
 | Metric | Model | "Always guess the median" baseline |
 |---|---|---|
-| LOOCV MAPE (average error) | 66.7% | 85.6% |
-| LOOCV median error | 39.7% | 43.8% |
-| LOOCV R² on raw streams | 0.204 | n/a |
-| 2025 holdout MAPE (20 albums) | 71.3% | 76.4% |
-| 2025 holdout median error | 41.6% | 55.4% |
+| LOOCV MAPE (average error) | 58.8% | 85.6% |
+| LOOCV median error | 32.1% | 43.8% |
+| Leave-one-artist-out median error | 33.4% | 45.3% |
+| LOOCV R² on raw streams | 0.375 | n/a |
+| 2025 holdout MAPE (20 albums) | 41.9% | 76.4% |
+| 2025 holdout median error | 26.1% | 55.4% |
 
 | Case study / validation | Result |
 |---|---|
 | 2026 Drake Iceman | +6.3% over |
 | 2026 Olivia Rodrigo | +4.6% over |
 | 2026 Ariana Grande Petal | +72.8% over (documented limitation) |
-| 2026 Harry Styles KissAllTheTime | +42.4% over (documented limitation) |
+| 2026 Harry Styles KissAllTheTime | +51.1% over (documented limitation) |
+
+The three case study rows are the logged predictions from the original model. The Harry Styles row is recomputed live with the current model.
 
 ### Reading the numbers honestly
 
-**The model is modestly better than a simple guess, but its errors are large, the edge is not statistically solid, and holdout numbers are noisy.**
+**The model beats a simple guess in every test, and for the first time the 90% bootstrap ranges exclude zero, but typical errors are still about a third and the holdout is small.**
 
-- **Cross-validation (91 albums):** typical error 39.7% against 43.8% for guessing the median. The average error (66.7%) is inflated by a few low-stream albums, above all *Stoney* (see Development Notes), so I rely on the median. R² on raw streams is 0.204.
-- **2025 holdout (20 albums):** typical error 41.6% against 55.4% for the guess; average error 71.3% against 76.4%. Averaged the cross-validation way, 41.6% and 60.7%.
-- **Bootstrap (5,000 resamples, 90% range):** the typical-error gap in the model's favor is 13.0 points on the holdout (25.6 lower to 1.3 higher) and 4.1 in cross-validation (14.8 lower to 2.8 higher). Both ranges include zero, and the model beats the guess on 54% of cross-validation albums. The holdout average-error gap (5.1 points, 10.3 to 0.2 lower) only just excludes zero and is driven by a few large misses.
-- **Holdout noise:** correcting a small fallback leak (see Development Notes) moved the fallback from about 200M to 206M and the holdout average error from 62.4% to 73.4%. Read any holdout figure as accurate to within about 10 points.
-- **Main failure, new artists with no history:** 15 of 20 holdout albums were over-predicted. The worst misses are Doja Cat's *Vie* (+259%), Addison Rae (+206%), Sleep Token (+155%), Central Cee (+122%), Olivia Dean (+119%) and sombr (+80%): the model predicts about 180M to 215M for albums that opened at 56M to 100M. The biggest under-predictions are megastars: Taylor Swift's *Life of a Showgirl* (60% under), Playboi Carti's *MUSIC* (43%) and Bad Bunny's *DeBÍ TiRAR MáS FOToS* (37%). The model regresses to the middle.
-- **Unseen artists** (all of an artist's albums left out): typical error 41.8% against 45.3% for the guess.
+- **Cross-validation (91 albums):** typical error 32.1% against 43.8% for guessing the median; average error 58.8% against 85.6%. The average is pulled up by a few low-stream albums (*Stoney* 647%, *Emails I Can't Send* 536%, J Balvin's *Jose* 274%), so I rely on the median. R² on raw streams is 0.375.
+- **2025 holdout (20 albums):** typical error 26.1% against 55.4% for the guess; average error 41.9% against 76.4%. 14 of 20 were over-predicted.
+- **Bootstrap (5,000 resamples, 90% range):** the typical-error gap in the model's favor is 10.5 points in cross-validation (17.7 to 0.1 lower, so only just excluding zero) and 27.9 on the holdout (62.1 to 7.3 lower). The average-error gaps are 26.0 (44.7 to 11.5 lower) and 34.0 (54.1 to 17.2 lower). The model beats the guess on 60% of cross-validation albums.
+- **How much to trust the holdout:** the model and every setting were chosen by cross-validation, not the holdout. But I looked at holdout numbers throughout development, so treat it as confirmation, not a clean test. It is only 20 albums and includes a few extreme ones, so read it as accurate to within about 10 points.
+- **The debut flag fixed most of the new-artist problem.** Before it, the model over-predicted most debut and small artists by 2x or more. With it, Olivia Dean is +5%, Central Cee +6%, sombr +6%, Alex Warren -7% (under) and Sleep Token +27%. Addison Rae is still +72%.
+- **Remaining failures:** artists with a known previous album that opened far below it. Doja Cat's *Vie* is +274% (previous album 124.5M, this one 56M), Tyler, the Creator +77% and Karol G +55%. On the other side, the very biggest releases are under-predicted: Taylor Swift's *Life of a Showgirl* (55% under), Playboi Carti's *MUSIC* (54%) and Bad Bunny's *DeBÍ TiRAR MáS FOToS* (40%). The model pulls everything toward the middle.
+- **Unseen artists** (all of an artist's albums left out): typical error 33.4% against 45.3% for the guess.
 
-I am keeping this as a documented framework, not a working forecaster. The Ariana and Harry Styles misses show where it breaks.
+I am presenting this as a modest, documented forecaster: a typical miss of about a third, against about 44% for guessing. The Ariana and Harry Styles misses show where it breaks.
 
 ---
 
 ## Limitations
 
-- **No proven edge over a naive baseline.** The headline limitation.
-- **Debut and thin-history artists are over-predicted.** 34 of 91 training rows use the fallback (about 205M) for the history feature, and with one prior album the history signal is close to noise. The live app flags this case. All three 2026 case study predictions use real prior-album data.
-- **Declining momentum.** Ariana Grande 2026 (+72.8%) and Harry Styles 2026 (+42.4%): the model over-credits historical scale and has no signal for a shrinking audience.
+- **Errors are still large.** The typical miss is about a third of the true figure, and average error is higher because a few albums are badly missed.
+- **Regression to the middle.** The very biggest releases are under-predicted and small, surprising ones over-predicted.
+- **The debut flag is crude.** It is binary. It says whether a previous album exists, not whether this release will resemble it (Doja Cat's *Vie*).
+- **Declining momentum.** Ariana Grande 2026 (+72.8%) and Harry Styles 2026 (+51.1%): the model over-credits historical scale and has no signal for a shrinking audience.
+- **Influential rows.** In a linear model, single extreme albums matter. Without *Stoney* the cross-validated typical error is 35.6% against 43.5% for the guess, so the edge survives, but the number depends on that one row.
 - **Era effects.** Adding older albums (2015 to 2022) made cross-validation error worse; listening habits and release strategies changed.
 - **Release type.** Every training album is a conventional release where streams concentrate in week one, so slow burns are not represented. Surprise releases (Bieber's *Swag*, Taylor Swift's *Folklore* and *Evermore*) are not modeled accurately; `lead_time=1` is a workaround.
 - **Narrow data.** US/UK superstar-tier artists, so the median reflects a major-label baseline, not the industry.
 - **Narrative context** (label disputes, comebacks, tours) is unquantifiable, kept out of inputs, and never used to adjust predictions.
-- **Sample size is the binding constraint.** 91 rows against 8 features is a data ceiling, not a tuning problem.
-- **Two averaging methods.** Cross-validation averages trees in log space; the holdout and live app average each tree's stream estimate, which gives slightly higher predictions. Flagged, not changed.
+- **Sample size.** 91 rows against 9 features, and a model that assumes effects add up in log space.
 
 ---
 
@@ -147,11 +161,13 @@ The headline numbers got worse, which is the correct outcome: the old ones were 
 
 ## Development Notes
 
-- **Dataset growth.** The data grew from 48 to 91 training albums, with every album meeting the rules added whatever the result. Rules: solo studio albums only (joint albums are not training rows but can serve as an artist's previous release), one source (chartmasters.org, Spotify global), and lead time counted from the first official announcement of the date the album actually came out on.
-- **Platform-size adjustment.** Stream features are divided by MAU^0.25 instead of full MAU, because first-week streams grew far more slowly than the user base. This cut cross-validated typical error by about 4 points at 66 albums. At 91 albums the choice is within noise: no adjustment is now marginally ahead in cross-validation (39.3% against 39.9% typical error), and I kept 0.25 rather than change the model for a 0.6-point difference.
+- **Dataset growth.** The data grew from 48 to 91 training albums, with every album meeting the rules added whatever the result. Rules: solo studio albums only (joint albums are not training rows but can serve as an artist's previous release), one source (chartmasters.org, Spotify global), and lead time counted from the announcement of the release date the album actually came out on (for a postponed album, the announcement of the final date).
+- **Platform-size adjustment.** Stream features are divided by MAU^0.25 instead of full MAU, because first-week streams grew far more slowly than the user base. Cross-validated typical error for Ridge by exponent: 33.7% at 0, **32.1% at 0.25**, 33.2% at 0.5, 32.7% at 0.75, 33.0% at 1. All five sit within 1.6 points, so the choice matters little. With the earlier Random Forest, 0 and 0.25 traded places as the dataset grew.
 - **Fallback value.** Artists with no earlier album use the median of the training albums only (about 205M). An earlier version included holdout albums, which was a small leak and is fixed. 34 of 91 training rows use it.
-- **Debut-artist flags.** A "has history" flag lowers typical error by about 2 points and average error by about 5 in cross-validation (38.2% against 40.0% typical). It is the lead candidate but is not adopted yet. Dropping `feature_track_count` is a small, inconsistent gain, so all 8 features stay.
-- **Stoney is included.** Post Malone's 2016 debut (14.5M, confirmed) is by far the smallest album and the model misses it by about 560%. It meets the rules, so it stays. It raises average error (60.8% to 66.7%) but barely moves typical error (39.5% to 39.7%), which is why typical error is the metric I rely on.
+- **Debut-artist flag.** `has_hist` was added because cross-validation said it helped at two dataset sizes (Random Forest typical error 38.8% to 38.0% at 90 albums, 40.0% to 38.2% at 91). With Ridge it was far larger (41.2% to 32.1%), which is what led to the model change.
+- **One prediction method.** An earlier Random Forest version averaged its trees one way in cross-validation and another way in the app, which gave slightly higher live predictions. Ridge has no such mismatch: one prediction in log space, used everywhere.
+- **Feature removal** (Ridge, leave-one-out typical error): all 9 features 32.1%; without `lead_time` 33.6%; without `feature_track_count` 36.6%; without `years_since_last_album` 33.2%; without `spotify_mau` 33.4%; without `is_household_name` 32.7% (a tie). All 9 stay.
+- **Stoney is included.** Post Malone's 2016 debut (14.5M, confirmed) is by far the smallest album, and the model's cross-validated prediction is 108M, a miss of about 650%. It meets the rules, so it stays. It raises the average error (53.2% without it, 58.8% with) and lowers the typical error (35.6% without, 32.1% with), because it is a clean example of the no-history effect.
 
 ---
 
@@ -169,10 +185,9 @@ The headline numbers got worse, which is the correct outcome: the old ones were 
 
 ## Roadmap
 
-- A "has history" flag or a separate treatment for debut artists, the model's largest source of error
-- Broader artist coverage: more low-tier and new-artist albums, which the model over-predicts
-- Update `app.py` to the platform-size adjustment and the larger dataset (the live app still uses the earlier method and the earlier, smaller training set) and report a typical-error range
-- Additional pre-release signals to improve accuracy
-- Re-benchmark RF vs XGBoost now that the dataset has passed 80 training rows
-- Test a separate treatment for superstar releases and a surprise-release flag
-- A larger 2025 to 2026 holdout
+- Broader artist coverage: more low-tier and new-artist albums
+- A softer version of the debut flag, for example prior-album size relative to the artist's other albums
+- Re-test XGBoost and gradient boosting now that the dataset has passed 90 training rows and has the debut flag
+- Additional pre-release signals (for example lead-single streams) to address under-prediction of the biggest releases
+- A surprise-release flag
+- A larger 2026 holdout
