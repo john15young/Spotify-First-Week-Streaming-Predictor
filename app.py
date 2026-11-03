@@ -681,9 +681,9 @@ st.markdown(
 st.markdown(f"""
 <p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
 Estimate how many first-week Spotify streams a major album will get, based on the artist's track record, the number of tracks and guest features, and how much notice fans were given.
-It is a Ridge regression trained on {N_TRAIN} albums from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}.
 First-week streams are driven by consumer demand, marketing strategy, and chance, which makes them inherently hard to predict. This model beat a simple guess on past albums but not on 2026 releases, so <b>use it as a starting point, not a precise number.</b>
 </p>
+<p style="font-size:11px; color:#666; margin:0 0 4px;">Built with a Ridge regression model trained on {N_TRAIN} albums from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}.</p>
 <p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
 """, unsafe_allow_html=True)
 
