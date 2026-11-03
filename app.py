@@ -183,6 +183,15 @@ Harry Styles,HarryStyles,2017,10,120,29,0,0,0,66,0
 Harry Styles,FineLine,2019,12,248,39,0,2,66,155,1
 Harry Styles,HarrysHouse,2022,13,489,58,0,2,155,440,1
 Harry Styles,KissAllTheTime,2026,14,761,50,0,4,440,205,1
+Noah Kahan,TheGreatDivide,2026,17,761,86,0,4,0,231.5,0
+Kanye West,BULLY,2026,18,761,3,6,2,251,158.9,1
+Don Toliver,OCTANE,2026,18,761,8,5,2,0,162.5,0
+J Cole,TheFallOff,2026,24,761,23,7,5,207.1,139.1,1
+Bruno Mars,TheRomantic,2026,9,761,51,0,5,0,144.0,1
+A$AP Rocky,DontBeDumb,2026,15,761,27,6,8,0,129.7,0
+Zach Bryan,WithHeavenOnTop,2026,25,761,175,0,2,98.5,98.1,0
+Ella Langley,Dandelion,2026,18,761,73,1,2,0,88.4,0
+Karol G,NoMeArrepiento,2026,14,788,9,4,1,136.2,76.4,1
 Ariana Grande,DangerousWoman,2016,15,100,71,4,2,0,53.6,1
 Ariana Grande,Sweetener,2018,15,207,58,2,2,53.6,174,1
 Ariana Grande,ThanksUNext,2019,12,248,17,0,1,174,361,1
@@ -505,13 +514,41 @@ def reference_adjusted_first_year(artist):
     return min(years) if years else None
 
 
-def latest_release_year(artist, before_year=None):
+# Albums already released in 2026 that are not training rows (first-week streams in millions).
+# They count as an artist's previous album for a Jul to Dec 2026 prediction, so the app does not
+# treat Drake, Olivia Rodrigo, Ariana Grande or BTS as having gone quiet since 2023 to 2024.
+# Harry Styles' 2026 album is already a row in the data. Release dates: Arirang Mar 20,
+# Iceman May 15, Olivia Rodrigo Jun 12, Petal Jul 31 (all 2026).
+RELEASES_2026 = {
+    "Drake":          [("Iceman", 450.4)],
+    "Olivia Rodrigo": [("you seem pretty sad for a girl so in love", 394.7)],
+    "Ariana Grande":  [("Petal", 236.1)],
+    "BTS":            [("Arirang", 525.6)],
+}
+
+
+def artist_prior(artist, before_year=None, late_2026=False):
+    """The artist's earlier albums as a DataFrame (album, year, first_week_streams), oldest
+    first. With before_year set, only albums released strictly earlier count, so backdating a
+    prediction does not let a later album leak in. late_2026 also counts the albums already
+    released in 2026 (for a Jul to Dec 2026 prediction)."""
+    cols = ['album', 'year', 'first_week_streams']
+    a = df[df['artist'] == artist][cols]
+    if before_year is None:
+        return a.sort_values('year')
+    keep = a[a['year'] < before_year]
+    if late_2026 and before_year == 2026:
+        extra = a[a['year'] == 2026]
+        refs = pd.DataFrame([(alb, 2026, st_) for alb, st_ in RELEASES_2026.get(artist, [])], columns=cols)
+        keep = pd.concat([keep, extra, refs], ignore_index=True)
+    return keep.sort_values('year', kind='stable')
+
+
+def latest_release_year(artist, before_year=None, late_2026=False):
     """Most recent known release year, including reference-only albums. With before_year
     set, only albums released strictly earlier count, so backdating a prediction does not
     let a later album leak in as the artist's 'previous' one."""
-    a = df[df['artist'] == artist].sort_values('year')
-    if before_year is not None:
-        a = a[a['year'] < before_year]
+    a = artist_prior(artist, before_year, late_2026)
     year = int(a.iloc[-1]['year']) if len(a) else None
     if artist in REFERENCE_HISTORY:
         ref_year = REFERENCE_HISTORY[artist]['year']
@@ -520,7 +557,7 @@ def latest_release_year(artist, before_year=None):
     return year
 
 
-def artist_history(artist, mau, before_year=None):
+def artist_history(artist, mau, before_year=None, late_2026=False):
     """Auto-fill trailing/prev fields from CSV history, falling back to dataset medians.
     Display-only prev_album_streams uses REFERENCE_HISTORY when the real training rows
     do not have it, so the UI shows the correct number even though it is not in training.
@@ -530,7 +567,7 @@ def artist_history(artist, mau, before_year=None):
     Without it, predicting an earlier period would feed the model albums that had not come
     out yet."""
     full = df[df['artist'] == artist].sort_values('year')
-    a = full[full['year'] < before_year] if before_year is not None else full
+    a = artist_prior(artist, before_year, late_2026)
 
     # Household-name status is an attribute of the artist, not of one release, so it is read
     # from the full history rather than the period-restricted slice.
@@ -745,8 +782,8 @@ st.markdown("""
 <div class="section-divider">
     <div class="section-divider-line"></div>
     <div style="text-align:center;">
-        <div class="section-divider-label">Make a prediction</div>
-        <div style="font-size:11px; color:#b3b3b3; margin-top:3px;">Fill in album details below to generate a first-week stream estimate</div>
+        <div class="section-divider-label" style="font-size:clamp(22px, 5vw, 34px); letter-spacing:0.14em; line-height:1.15; white-space:normal;">Make a prediction</div>
+        <div style="font-size:clamp(13px, 2.4vw, 16px); color:#d0d0d0; margin-top:8px;">Fill in album details below to generate a first-week stream estimate</div>
     </div>
     <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
 </div>
@@ -763,7 +800,7 @@ with a_col:
     artist_name = st.selectbox("Artist", artists, index=default_artist_index)
 with name_col:
     album_name = st.text_input(
-        "Album name (optional)", placeholder="e.g. Midnight Rain",
+        "Album name (optional)", placeholder="Enter album name here",
         help="Optional. If provided, your share tweet will include the album name.")
 
 # Release period sets the platform size the prediction is pinned to, and also the cutoff
@@ -786,6 +823,7 @@ with m_col:
              "not reported yet.")
 
 release_year = int(release_period.split()[0])
+late_2026 = release_period.startswith('2026 (Jul')   # albums already out in 2026 count as history
 mau_basis = f"{mau}M MAU, {release_period}"
 if mau != MAU_BY_PERIOD[release_period]:
     st.caption(f"Using a manual override of {mau}M. {release_period} reported "
@@ -795,18 +833,19 @@ else:
 
 # Artist bio snippet: last album plus a quick fact, limited to the chosen release period so
 # it shows the history the model will actually use.
-a_hist = df[(df['artist'] == artist_name) & (df['year'] < release_year)].sort_values('year')
+a_hist = artist_prior(artist_name, release_year, late_2026)
+_when = 'on record' if late_2026 else f'before {release_year}'
 if len(a_hist) > 0:
     last = a_hist.iloc[-1]
     best = a_hist.loc[a_hist['first_week_streams'].idxmax()]
     if len(a_hist) > 1:
-        fact = f"Best first-week before {release_year}: {best['album']}, {int(best['first_week_streams'])}M ({int(best['year'])})"
+        fact = f"Best first-week {_when}: {best['album']}, {int(best['first_week_streams'])}M ({int(best['year'])})"
     else:
-        fact = f"Only one album tracked for this artist before {release_year}"
+        fact = f"Only one album tracked for this artist {_when}"
     st.markdown(
         f"<div style='background:#13161d; border:1px solid #1db95444; border-radius:6px; padding:8px 14px; "
         f"margin-bottom:12px; font-size:13px;'>"
-        f"<span style='color:{SPOTIFY_GREEN}; font-weight:600;'>Last album before {release_year}:</span> "
+        f"<span style='color:{SPOTIFY_GREEN}; font-weight:600;'>Last album {_when}:</span> "
         f"<span style='color:#fff;'>{last['album']}</span>"
         f"<span style='color:#b3b3b3;'>, {int(last['first_week_streams'])}M first-week streams ({int(last['year'])})</span>"
         f"<br><span style='color:#666; font-size:12px;'>{fact}</span>"
@@ -817,7 +856,7 @@ else:
     st.markdown(
         f"<div style='background:#13161d; border:1px solid #f59e0b44; border-radius:6px; padding:8px 14px; "
         f"margin-bottom:12px; font-size:13px; color:#b3b3b3;'>"
-        f"No albums tracked for {artist_name} before {release_year}, so the model falls back to "
+        f"No albums tracked for {artist_name} {_when}, so the model falls back to "
         f"dataset medians. Expect a weaker prediction."
         f"</div>",
         unsafe_allow_html=True
@@ -843,15 +882,43 @@ is_household = st.toggle(
 
 # Years since last album, measured against the chosen release period rather than today,
 # so a prediction for an earlier period uses the gap as it stood back then.
-most_recent_year = latest_release_year(artist_name, before_year=release_year)
-years_since_last = max(0, int(release_year - most_recent_year)) if most_recent_year else 0
-st.caption(f"Years since last album (auto): {years_since_last}")
+most_recent_year = latest_release_year(artist_name, before_year=release_year, late_2026=late_2026)
+years_auto = max(0, int(release_year - most_recent_year)) if most_recent_year else 0
 
-hist = artist_history(artist_name, mau, before_year=release_year)
+hist = artist_history(artist_name, mau, before_year=release_year, late_2026=late_2026)
 hist['is_household_name'] = int(is_household)
+_scale = mau ** ERA_EXP
+prev_auto = int(round(hist['prev_streams_per_mau'] * _scale)) if hist['has_hist'] else 0
 
-with st.expander("Auto-filled from artist history (dataset medians used if no history)"):
-    _scale = mau ** ERA_EXP
+# Manual override: the history comes from the albums in the data, so it can be out of date for an
+# artist who has released something since (or a joint album, EP or mixtape the data leaves out).
+with st.expander(f"Override history (auto: {years_auto} years since last album, "
+                 f"previous album {prev_auto}M)"):
+    st.caption("Both values are filled in from the data. If this artist has released a studio album "
+               "the data does not know about, correct them here. Set previous album streams to 0 "
+               "for a debut or if the number is unknown.")
+    _c1, _c2 = st.columns(2)
+    years_since_last = _c1.number_input(
+        "Years since last album", min_value=0, value=years_auto, step=1,
+        key=f"yrs_{artist_name}_{release_period}")
+    prev_override = _c2.number_input(
+        "Previous album first-week streams (M)", min_value=0, value=prev_auto, step=1,
+        key=f"prev_{artist_name}_{release_period}")
+
+if prev_override != prev_auto:
+    if prev_override > 0:
+        _prev = prev_override / _scale
+        _trail = hist['trailing_avg_per_mau'] if len(a_hist) else _prev
+        hist.update(prev_streams_per_mau=_prev, trailing_avg_per_mau=_trail,
+                    history_per_mau=(_prev + _trail) / 2, has_hist=1)
+    else:
+        _fallback = gm / _scale
+        hist.update(prev_streams_per_mau=_fallback, trailing_avg_per_mau=_fallback,
+                    history_per_mau=_fallback, has_hist=0)
+if years_since_last != years_auto or prev_override != prev_auto:
+    st.caption("Using your overridden history values.")
+
+with st.expander("History used by the model (dataset medians used if no history)"):
     st.write(f"Previous release first-week streams: **{hist['prev_streams_per_mau'] * _scale:.0f}M**")
     st.write(f"Career average first-week streams: **{hist['trailing_avg_per_mau'] * _scale:.0f}M**")
     st.write(f"Combined history signal used by the model: **{hist['history_per_mau'] * _scale:.0f}M**")
@@ -876,7 +943,7 @@ with prediction_slot:
         typ = TYPICAL_ERR
         daily_avg = pred / 7
 
-        prior_albums = len(df[(df['artist'] == artist_name) & (df['year'] < release_year)])
+        prior_albums = len(artist_prior(artist_name, release_year, late_2026))
         if not hist['has_hist']:
             card_border = "#f59e0b"
             conf_note = (f"⚠️ No previous album on record for this artist before {release_year}. "
@@ -887,7 +954,7 @@ with prediction_slot:
             card_border = "#f59e0b"
             conf_note = (f"⚠️ Lower confidence: only {prior_albums} album"
                          f"{'' if prior_albums == 1 else 's'} tracked for this artist before "
-                         f"{release_year}, so the history signal is thin.")
+                         f"{'now' if late_2026 else release_year}, so the history signal is thin.")
         else:
             card_border = SPOTIFY_GREEN
             conf_note = None
@@ -1034,8 +1101,8 @@ with st.expander("🔍 How accurate is this model?"):
 
 with st.expander("✅ Real-world track record (2026)"):
     st.markdown(
-        "These are 2026 albums with known outcomes. The model predicted them, "
-        "then they were checked against reality once the actual numbers came in."
+        "These are 2026 albums with known outcomes. The model was frozen before they were added, "
+        "so none of them influenced training or tuning. Inputs were locked before it was run."
     )
     val_df = pd.DataFrame(state['val_results'])
     val_df['pred'] = val_df['pred'].round(0).astype(int)
@@ -1043,6 +1110,9 @@ with st.expander("✅ Real-world track record (2026)"):
     val_df['err'] = val_df['err'].round(1)
     val_df.columns = ['Album', 'Predicted (M)', 'Actual (M)', 'Error (%)']
     st.dataframe(val_df, hide_index=True, use_container_width=True)
+    st.caption(f"Typical error on these {len(val_df)} albums: {val_df['Error (%)'].median():.1f}%. "
+               f"Average error: {val_df['Error (%)'].mean():.1f}%. The model over-predicted the albums with "
+               "many tracks and guests that opened small (Karol G, J. Cole, Zach Bryan).")
 
 with st.expander("⚙️ What factors drive the prediction?"):
     st.markdown(

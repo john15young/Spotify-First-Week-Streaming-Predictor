@@ -90,18 +90,32 @@ Lasso (36.0%) and ElasticNet (33.9%) fall between the two in leave-one-out typic
 | 2025 holdout MAPE (20 albums) | 41.9% | 76.4% |
 | 2025 holdout median error | 26.1% | 55.4% |
 
-| Case study / validation | Result |
+| Summer 2026 case study (logged predictions) | Result |
 |---|---|
-| 2026 Drake Iceman | +6.3% over |
-| 2026 Olivia Rodrigo | +4.6% over |
-| 2026 Ariana Grande Petal | +72.8% over (documented limitation) |
-| 2026 Harry Styles KissAllTheTime | +51.1% over (documented limitation) |
+| Drake Iceman | +6.3% over |
+| Olivia Rodrigo | +4.6% over |
+| Ariana Grande Petal | +72.8% over (documented limitation) |
 
-The three case study rows are the logged predictions from the original model. The Harry Styles row is recomputed live with the current model.
+**2026 test set (10 albums, current model).** After the revision I added nine 2026 albums with known results, plus Harry Styles. Inputs were locked before the model was run, and nothing was tuned on them. Unlike the 2025 holdout, I did not look at these during development.
+
+| Album | Predicted | Actual | Error |
+|---|---|---|---|
+| A$AP Rocky, Don't Be Dumb | 112M | 129M | -13.3% |
+| Bruno Mars, The Romantic | 120M | 144M | -16.4% |
+| Noah Kahan, The Great Divide | 121M | 231M | -47.6% |
+| Don Toliver, OCTANE | 112M | 162M | -30.5% |
+| Ella Langley, Dandelion | 118M | 88M | +33.5% |
+| Harry Styles, Kiss All the Time | 309M | 205M | +51.1% |
+| Kanye West, BULLY | 304M | 158M | +91.5% |
+| Zach Bryan, With Heaven On Top | 223M | 98M | +128.3% |
+| J. Cole, The Fall-Off | 381M | 139M | +174.3% |
+| Karol G, NO ME ARREPIENTO DE SENTIR TANTO | 234M | 76M | +207.3% |
+
+Typical error is 49.3% against 44.9% for guessing the median album, and the average error is 79.4% against 62.4% for the guess. (My first pass flagged Noah Kahan and A$AP Rocky as household names, which I corrected after seeing results; with that flag the typical error was 42.3%. Either way the model is no better than the guess.) **On this set the model is no better than the guess.** The three logged case study predictions above were made by the original model; the 2026 test set uses the current one.
 
 ### Reading the numbers honestly
 
-**The model beats a simple guess in every test, and for the first time the 90% bootstrap ranges exclude zero, but typical errors are still about a third and the holdout is small.**
+**The model beats a simple guess in cross-validation and on the 2025 holdout, but not on the 2026 test set, which is the only test I did not look at during development. Treat the 2025 numbers as optimistic.**
 
 - **Cross-validation (91 albums):** typical error 32.1% against 43.8% for guessing the median; average error 58.8% against 85.6%. The average is pulled up by a few low-stream albums (*Stoney* 647%, *Emails I Can't Send* 536%, J Balvin's *Jose* 274%), so I rely on the median. R² on raw streams is 0.375.
 - **2025 holdout (20 albums):** typical error 26.1% against 55.4% for the guess; average error 41.9% against 76.4%. 14 of 20 were over-predicted.
@@ -111,7 +125,9 @@ The three case study rows are the logged predictions from the original model. Th
 - **Remaining failures:** artists with a known previous album that opened far below it. Doja Cat's *Vie* is +274% (previous album 124.5M, this one 56M), Tyler, the Creator +77% and Karol G +55%. On the other side, the very biggest releases are under-predicted: Taylor Swift's *Life of a Showgirl* (55% under), Playboi Carti's *MUSIC* (54%) and Bad Bunny's *DeBÍ TiRAR MáS FOToS* (40%). The model pulls everything toward the middle.
 - **Unseen artists** (all of an artist's albums left out): typical error 33.4% against 45.3% for the guess.
 
-I am presenting this as a modest, documented forecaster: a typical miss of about a third, against about 44% for guessing. The Ariana and Harry Styles misses show where it breaks.
+- **2026 test set (10 albums):** typical error 49.3% against 44.9% for the guess, average error 79.4% against 62.4%. The five worst misses are over-predictions (Karol G +207%, J. Cole +174%, Zach Bryan +128%, Kanye West +92%, Harry Styles +51%). All opened far below the model's estimate, and most have many tracks, guest tracks or a household-name flag, which push the prediction up. The set is small and the albums are mostly hip-hop and country, so the pattern is suggestive, not proven.
+
+I am presenting this as a documented framework with a modest edge in back-testing and no demonstrated edge on new data yet. The Ariana, Harry Styles, Karol G and J. Cole misses show where it breaks.
 
 ---
 
@@ -120,6 +136,7 @@ I am presenting this as a modest, documented forecaster: a typical miss of about
 - **Errors are still large.** The typical miss is about a third of the true figure, and average error is higher because a few albums are badly missed.
 - **Regression to the middle.** The very biggest releases are under-predicted and small, surprising ones over-predicted.
 - **The debut flag is crude.** It is binary. It says whether a previous album exists, not whether this release will resemble it (Doja Cat's *Vie*).
+- **Large catalogs and big track counts.** On the 2026 test set the model over-predicted long, guest-heavy releases (J. Cole 24 tracks, +174%; Zach Bryan 25 tracks, +128%).
 - **Declining momentum.** Ariana Grande 2026 (+72.8%) and Harry Styles 2026 (+51.1%): the model over-credits historical scale and has no signal for a shrinking audience.
 - **Influential rows.** In a linear model, single extreme albums matter. Without *Stoney* the cross-validated typical error is 35.6% against 43.5% for the guess, so the edge survives, but the number depends on that one row.
 - **Era effects.** Adding older albums (2015 to 2022) made cross-validation error worse; listening habits and release strategies changed.
@@ -167,6 +184,7 @@ The headline numbers got worse, which is the correct outcome: the old ones were 
 - **Debut-artist flag.** `has_hist` was added because cross-validation said it helped at two dataset sizes (Random Forest typical error 38.8% to 38.0% at 90 albums, 40.0% to 38.2% at 91). With Ridge it was far larger (41.2% to 32.1%), which is what led to the model change.
 - **One prediction method.** An earlier Random Forest version averaged its trees one way in cross-validation and another way in the app, which gave slightly higher live predictions. Ridge has no such mismatch: one prediction in log space, used everywhere.
 - **Feature removal** (Ridge, leave-one-out typical error): all 9 features 32.1%; without `lead_time` 33.6%; without `feature_track_count` 36.6%; without `years_since_last_album` 33.2%; without `spotify_mau` 33.4%; without `is_household_name` 32.7% (a tie). All 9 stay.
+- **2026 albums as history in the app.** For a Jul to Dec 2026 prediction, the app counts albums already released in 2026 as an artist's previous album: Drake's *Iceman*, Olivia Rodrigo's album, Ariana Grande's *Petal*, BTS's *Arirang* and Harry Styles' *Kiss All the Time*. Without this, "years since last album" and the history signal looked back to 2020 to 2024 for artists who had since released. Jan to Jun predictions still use only albums from before 2026. These albums are not training rows.
 - **Stoney is included.** Post Malone's 2016 debut (14.5M, confirmed) is by far the smallest album, and the model's cross-validated prediction is 108M, a miss of about 650%. It meets the rules, so it stays. It raises the average error (53.2% without it, 58.8% with) and lowers the typical error (35.6% without, 32.1% with), because it is a clean example of the no-history effect.
 
 ---
