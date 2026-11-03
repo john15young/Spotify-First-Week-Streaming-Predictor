@@ -351,8 +351,8 @@ TRAIN_YEAR_MIN = 2015
 # MODEL TRAINING - cached so it only runs once per session
 # =============================================================================
 @st.cache_resource
-def load_and_train():
-    df = pd.read_csv(io.StringIO(CSV_CONTENT)).sort_values(['artist', 'year']).reset_index(drop=True)
+def load_and_train(csv_text):
+    df = pd.read_csv(io.StringIO(csv_text)).sort_values(['artist', 'year']).reset_index(drop=True)
     df['household_x_tracks'] = df['is_household_name'] * df['track_count']
     df['spt'] = df['first_week_streams'] / df['track_count']
     # Fallback for artists with no earlier album: median of the TRAINING albums only, so no
@@ -452,7 +452,7 @@ def load_and_train():
     }
 
 
-state = load_and_train()
+state = load_and_train(CSV_CONTENT)
 df, model = state['df'], state['model']
 gm, gm_spt = state['gm'], state['gm_spt']
 
@@ -693,7 +693,14 @@ st.markdown(f"""
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🔧</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Roadmap: broader artist coverage and additional pre-release signals to improve accuracy.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0 0 6px; line-height:1.6;">What's planned next:</p>
+        <ul style="font-size:12px; color:#b3b3b3; margin:0; padding-left:16px; line-height:1.6;">
+            <li>Add every new 2026 and 2027 release as a fresh test, to see if the model really works on new albums.</li>
+            <li>Add more albums, especially from newer and smaller artists.</li>
+            <li>Better handling of surprise releases and of artists whose last album opened far below the one before.</li>
+            <li>Use early signals before release, like how the lead single performs.</li>
+            <li>Fill in missing previous-album numbers for older artists.</li>
+        </ul>
     </div>
 </div>
 <p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
@@ -702,78 +709,6 @@ st.markdown(f"""
 artists = sorted(df['artist'].unique().tolist())
 DEFAULT_ARTIST = "Drake"
 default_artist_index = artists.index(DEFAULT_ARTIST) if DEFAULT_ARTIST in artists else 0
-
-# -----------------------------------------------------------------------------
-# Recent predictions
-# -----------------------------------------------------------------------------
-cards_html = []
-for item in PREDICTION_LOG:
-    diff_pct = (item['pred'] - item['actual']) / item['actual'] * 100
-    badge_color, marker = accuracy_style(diff_pct)
-    cards_html.append(f"""
-    <div class="pred-card">
-        <div class="pred-card-title">{item['artist']}: {item['album']}</div>
-        <div class="pred-row">
-            <div>
-                <div class="pred-num" style="color:{SPOTIFY_GREEN};">{item['pred']:.0f}M</div>
-                <div class="pred-lbl">predicted</div>
-            </div>
-            <div class="pred-sep"></div>
-            <div>
-                <div class="pred-num" style="color:#ffffff;">{item['actual']:.1f}M</div>
-                <div class="pred-lbl">actual</div>
-            </div>
-        </div>
-        <div class="pred-badge" style="color:{badge_color};">{diff_pct:+.1f}% off{marker}</div>
-    </div>""")
-
-st.markdown(f"""
-<p style="font-size:13px; color:#b3b3b3; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">
-    Summer 2026 case study
-</p>
-<div class="pred-grid">{''.join(cards_html)}</div>
-<p style="font-size:11.5px; color:#666; margin:12px 0 0 0; line-height:1.6;">
-    Each forecast was logged before that album was released, then checked against the real
-    first-week figure. The model has since been revised, so it would produce different numbers
-    today. These are kept as a record and are never recalculated.
-</p>
-""", unsafe_allow_html=True)
-
-# -----------------------------------------------------------------------------
-# At a glance (moved off the sidebar)
-# -----------------------------------------------------------------------------
-st.markdown("""
-<div class="section-divider">
-    <div class="section-divider-line"></div>
-    <div class="section-divider-label">Model at a glance</div>
-    <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
-</div>
-""", unsafe_allow_html=True)
-
-g1, g2, g3, g4 = st.columns(4)
-g1.metric(
-    "Typical error, unseen albums", f"{HOLD_MED:.0f}%",
-    help=(f"The median miss on the {N_HOLD} albums from 2025 that the model never saw during training. "
-          f"Always guessing the median album would have missed by {BASE_HOLD_MED:.0f}% on the same albums. "
-          f"The average miss is larger ({HOLDOUT_MAPE:.0f}% against {BASE_HOLD:.0f}%) because a few debut "
-          f"and small-artist albums are badly over-predicted."))
-g2.metric(
-    "Albums tracked", N_TRAIN,
-    help=(f"Major album releases used to train the model ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). "
-          f"A further {N_HOLD} albums from 2025 and {N_VAL} from 2026 are held out for testing only."))
-g3.metric(
-    "Model R² (relative scale)", f"{state['r2']:.3f}",
-    help=(f"Measured on log(streams ÷ users), so it scores how well the model places an album's size "
-          f"relative to Spotify's audience at the time, not its raw stream count. Computed by "
-          f"leave-one-out cross-validation, on albums the model had not seen.\n\n"
-          f"On the raw stream scale the same predictions score about {state['r2_real']:.2f}. A low score "
-          f"there means a few outsized albums account for most of the spread and the model does not reach them. "
-          f"Typical error is the more intuitive gauge of everyday accuracy."))
-g4.metric(
-    "Typical error, cross-validated", f"{state['model_med']:.1f}%",
-    help=(f"The median percentage the prediction is off from the real number, measured across all training "
-          f"albums using leave-one-out cross-validation. Always guessing the median album scores "
-          f"{state['base_med']:.1f}%."))
 
 # -----------------------------------------------------------------------------
 # Prediction output (rendered above the inputs, full width)
@@ -892,14 +827,14 @@ prev_auto = int(round(hist['prev_streams_per_mau'] * _scale)) if hist['has_hist'
 
 # Manual override: the history comes from the albums in the data, so it can be out of date for an
 # artist who has released something since (or a joint album, EP or mixtape the data leaves out).
-with st.expander(f"Override history (auto: {years_auto} years since last album, "
-                 f"previous album {prev_auto}M)"):
-    st.caption("Both values are filled in from the data. If this artist has released a studio album "
-               "the data does not know about, correct them here. Set previous album streams to 0 "
-               "for a debut or if the number is unknown.")
+with st.expander("Is this artist's history out of date? Edit it here (optional)"):
+    st.caption(f"The app found: last album {years_auto} year(s) before this release, and it opened with "
+               f"{prev_auto}M first-week streams. If the artist has put out a studio album since that the "
+               "app does not know about, fix both numbers. Enter 0 streams for a debut or if you do not "
+               "know the number.")
     _c1, _c2 = st.columns(2)
     years_since_last = _c1.number_input(
-        "Years since last album", min_value=0, value=years_auto, step=1,
+        "Years since their last studio album", min_value=0, value=years_auto, step=1,
         key=f"yrs_{artist_name}_{release_period}")
     prev_override = _c2.number_input(
         "Previous album first-week streams (M)", min_value=0, value=prev_auto, step=1,
@@ -1069,6 +1004,100 @@ with prediction_slot:
         """, unsafe_allow_html=True)
 
 # -----------------------------------------------------------------------------
+# Evidence: how well does it work? (below the prediction tool)
+# -----------------------------------------------------------------------------
+st.markdown("""
+<div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">How well does it work?</div>
+    <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
+</div>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# Recent predictions
+# -----------------------------------------------------------------------------
+cards_html = []
+for item in PREDICTION_LOG:
+    diff_pct = (item['pred'] - item['actual']) / item['actual'] * 100
+    badge_color, marker = accuracy_style(diff_pct)
+    cards_html.append(f"""
+    <div class="pred-card">
+        <div class="pred-card-title">{item['artist']}: {item['album']}</div>
+        <div class="pred-row">
+            <div>
+                <div class="pred-num" style="color:{SPOTIFY_GREEN};">{item['pred']:.0f}M</div>
+                <div class="pred-lbl">predicted</div>
+            </div>
+            <div class="pred-sep"></div>
+            <div>
+                <div class="pred-num" style="color:#ffffff;">{item['actual']:.1f}M</div>
+                <div class="pred-lbl">actual</div>
+            </div>
+        </div>
+        <div class="pred-badge" style="color:{badge_color};">{diff_pct:+.1f}% off{marker}</div>
+    </div>""")
+
+st.markdown(f"""
+<p style="font-size:13px; color:#b3b3b3; margin-bottom:10px; text-transform:uppercase; letter-spacing:0.1em;">
+    Summer 2026 case study
+</p>
+<div class="pred-grid">{''.join(cards_html)}</div>
+<p style="font-size:11.5px; color:#666; margin:12px 0 0 0; line-height:1.6;">
+    Each forecast was logged before that album was released, then checked against the real
+    first-week figure. The model has since been revised, so it would produce different numbers
+    today. These are kept as a record and are never recalculated.
+</p>
+""", unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
+# At a glance (moved off the sidebar)
+# -----------------------------------------------------------------------------
+st.markdown("""
+<div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Model at a glance</div>
+    <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
+</div>
+""", unsafe_allow_html=True)
+
+g1, g2, g3, g4 = st.columns(4)
+g1.metric(
+    "Typical error, unseen albums", f"{HOLD_MED:.0f}%",
+    help=(f"The median miss on the {N_HOLD} albums from 2025 that the model never saw during training. "
+          f"Always guessing the median album would have missed by {BASE_HOLD_MED:.0f}% on the same albums. "
+          f"The average miss is larger ({HOLDOUT_MAPE:.0f}% against {BASE_HOLD:.0f}%) because a few debut "
+          f"and small-artist albums are badly over-predicted."))
+g2.metric(
+    "Albums tracked", N_TRAIN,
+    help=(f"Major album releases used to train the model ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). "
+          f"A further {N_HOLD} albums from 2025 and {N_VAL} from 2026 are held out for testing only."))
+g3.metric(
+    "Model R² (relative scale)", f"{state['r2']:.3f}",
+    help=(f"Measured on log(streams ÷ users), so it scores how well the model places an album's size "
+          f"relative to Spotify's audience at the time, not its raw stream count. Computed by "
+          f"leave-one-out cross-validation, on albums the model had not seen.\n\n"
+          f"On the raw stream scale the same predictions score about {state['r2_real']:.2f}. A low score "
+          f"there means a few outsized albums account for most of the spread and the model does not reach them. "
+          f"Typical error is the more intuitive gauge of everyday accuracy."))
+g4.metric(
+    "Typical error, cross-validated", f"{state['model_med']:.1f}%",
+    help=(f"The median percentage the prediction is off from the real number, measured across all training "
+          f"albums using leave-one-out cross-validation. Always guessing the median album scores "
+          f"{state['base_med']:.1f}%."))
+
+
+_v_err = [r["err"] for r in state["val_results"]]
+_v_base = [abs(gm - r["actual"]) / r["actual"] * 100 for r in state["val_results"]]
+st.markdown(
+    f"<p style='font-size:13px; color:#d0d0d0; margin:14px 0 0 0; line-height:1.6;'>"
+    f"<b>Newest test:</b> on {len(_v_err)} albums from 2026 that were never used to build or tune the model, "
+    f"the typical miss was <b>{np.median(_v_err):.0f}%</b>, against {np.median(_v_base):.0f}% for always guessing the "
+    f"middle album. That is no better than the plain guess, so the earlier figures above are likely too "
+    f"optimistic. Details are under the 2026 track record below.</p>",
+    unsafe_allow_html=True)
+
+# -----------------------------------------------------------------------------
 # Detail panels (moved off the sidebar)
 # -----------------------------------------------------------------------------
 st.markdown("""
@@ -1138,60 +1167,43 @@ with st.expander("⚙️ What factors drive the prediction?"):
 
 with st.expander("📖 How does this model work?"):
     st.markdown(f"""
-This application uses a **Ridge regression** (a regularized linear model) trained on {N_TRAIN} major
-album releases from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}, plus {N_HOLD} albums from 2025 and {N_VAL} from
-2026 held out purely for testing (never used in training).
+**The short version:** the model looks at {N_TRAIN} big album releases from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX} and
+learns how a few simple facts relate to first-week streams. It uses a method called Ridge regression,
+which is basically a weighted checklist: each fact pushes the prediction up or down by a set amount.
+{N_HOLD} albums from 2025 and {N_VAL} from 2026 were kept out of training and used only for testing.
 
-**The core idea:** an album's first-week streams are mostly explained by whether the artist has a real
-track record on the platform, how big their name is, how many tracks the album has, and how big
-Spotify was at the time. The model works on log(streams) after a platform-size adjustment, so each
-input scales the prediction by a percentage.
+**What it looks at:** how well the artist's last album did, how big their name is, how many tracks the
+album has (and how many have guest artists), how long ago the last album came out, how many days of
+warning fans got, and how big Spotify was at the time.
 
-**Platform size:** stream figures are divided by Spotify's monthly users raised to the power 0.25,
-not in full, because first-week streams grew far more slowly than the user base.
+**Spotify's growth:** Spotify has many more users now than in 2015, but album streams did not grow
+nearly as fast. So the model scales for platform size only partway (to the power 0.25), not in full.
 
-**The "has a previous album" flag:** when an artist has no earlier album on record, the history input
-is filled in with the median training album. The flag tells the model when that has happened. It was
-the largest single improvement: with it, a linear model's typical cross-validated error fell from
-about 41% to about 32%.
+**New artists:** if an artist has no earlier album on record, the model uses a typical album as a
+stand-in and flags that it did so. Adding that flag was the biggest single improvement, cutting the
+typical miss from about 41% to about 32%.
 
-**Inputs that had to be fixed:** the model originally included a hand-assigned "hype score" for
-pre-release buzz, and it was the single strongest predictor. The problem was that those scores had
-been assigned *after* the albums came out, so they carried hindsight the model could exploit.
-Cross-validation cannot catch that, because the contamination sits inside the feature's values rather
-than across the train/test split. Dropping it made the cross-validated numbers worse and the held-out
-2025 albums better, which is the signature of a leaky predictor. Lead times had a different problem:
-they were first entered from memory, and when re-checked against announcement dates most of them
-changed, many by a month or more. The verified ones carry almost no signal on their own.
+**Why Ridge:** with only {N_TRAIN} albums to learn from, a simple weighted checklist works better than
+a complicated model. It beat the Random Forest this project started with (about {state['model_med']:.0f}% typical
+error against 38%), and it was picked before looking at the 2025 albums.
 
-**Why Ridge:** it was chosen by leave-one-out cross-validation alone, before looking at the 2025
-albums. Its typical error was {state['model_med']:.0f}%, against about 38% for the Random Forest this
-project started with. With only {N_TRAIN} training rows, a simple model that adds up weighted inputs
-is a better fit than one that has to learn thresholds from a handful of albums.
+**How accuracy is measured:** the model is trained on {N_TRAIN - 1} albums and tested on the one left out,
+repeated {N_TRAIN} times, so every test album is one the model has not seen. It beat a plain "guess the
+middle" answer on about {state['beat_share'] * 100:.0f}% of albums.
 
-**How accuracy is measured:** every figure in this app comes from Leave-One-Out Cross-Validation: train
-on {N_TRAIN - 1} albums, test on the 1 left out, repeat {N_TRAIN} times. That gives an honest read on
-data the model has not seen. The model beats the median guess on about {state['beat_share'] * 100:.0f}% of
-albums in this test.
+**What it cannot see:** label fights, tour announcements, viral moments and cultural buzz are left out on
+purpose. With this little data, the model would mistake coincidences for real patterns.
 
-**What the model does not know:** things like label disputes, surprise tour announcements, viral
-TikTok moments, or genuine cultural narrative are deliberately left out. They are real factors, but
-they cannot be reliably quantified across just {N_TRAIN} albums without the model latching onto
-coincidence instead of signal.
+**Where it goes wrong:** it pulls everything toward the middle. It over-predicts new or small artists,
+artists whose popularity is fading (Ariana Grande's *Petal*: predicted 408M, opened at 236.1M) and long,
+guest-heavy albums. It under-predicts the very biggest releases like Taylor Swift's *Life of a Showgirl*.
+Surprise drops with no warning are also hard for it.
 
-**Known limitations:** the model tends to over-predict for artists showing signs of declining
-momentum, since it has no explicit signal for that. Ariana Grande's *Petal* is the clearest recent
-example: the model called 408M and the album opened at 236.1M, a miss of roughly 73%. It also
-over-predicts small and new artists and under-predicts the very biggest releases (for example Taylor
-Swift's *Life of a Showgirl*): it pulls everything toward the middle. Surprise album drops with little
-to no announcement lead time are harder to model than traditional promotional cycles.
-
-**The honest headline:** the model is better than a simple guess, but its errors are still large. In
-cross-validation its typical (median) error is {state['model_med']:.0f}% against {state['base_med']:.0f}% for
-always guessing the median album. On the {N_HOLD} albums from 2025 it is {HOLD_MED:.0f}% against
-{BASE_HOLD_MED:.0f}%. The average error is higher ({state['mape']:.0f}% in cross-validation) because a few
-small or debut albums are badly over-predicted. {N_TRAIN} training rows against {len(FEATS)} features is
-thin. Treat its output as a ballpark for how an album is likely to open, not a precise forecast.
+**The honest summary:** in testing on past albums, the typical miss is {state['model_med']:.0f}%, against
+{state['base_med']:.0f}% for always guessing the middle. On the {N_HOLD} albums from 2025 it is {HOLD_MED:.0f}%
+against {BASE_HOLD_MED:.0f}%. But on the {N_VAL} 2026 albums, which were never used to build or tune the
+model, it did no better than the plain guess (see the 2026 track record). Treat its output as a rough
+ballpark, not a precise forecast.
     """)
 
 st.markdown(f"""
