@@ -192,6 +192,10 @@ A$AP Rocky,DontBeDumb,2026,15,761,27,6,8,0,129.7,0
 Zach Bryan,WithHeavenOnTop,2026,25,761,175,0,2,98.5,98.1,0
 Ella Langley,Dandelion,2026,18,761,73,1,2,0,88.4,0
 Karol G,NoMeArrepiento,2026,14,788,9,4,1,136.2,76.4,1
+Olivia Rodrigo,YSPSFAGSIL,2026,13,761,71,1,3,284,394.7,1
+Drake,Iceman,2026,18,761,24,2,3,405,450.4,1
+BTS,Arirang,2026,14,761,74,0,6,153.8,525.6,1
+Ariana Grande,Petal,2026,12,788,94,0,2,342,236.1,1
 Ariana Grande,DangerousWoman,2016,15,100,71,4,2,0,53.6,1
 Ariana Grande,Sweetener,2018,15,207,58,2,2,53.6,174,1
 Ariana Grande,ThanksUNext,2019,12,248,17,0,1,174,361,1
@@ -519,12 +523,7 @@ def reference_adjusted_first_year(artist):
 # treat Drake, Olivia Rodrigo, Ariana Grande or BTS as having gone quiet since 2023 to 2024.
 # Harry Styles' 2026 album is already a row in the data. Release dates: Arirang Mar 20,
 # Iceman May 15, Olivia Rodrigo Jun 12, Petal Jul 31 (all 2026).
-RELEASES_2026 = {
-    "Drake":          [("Iceman", 450.4)],
-    "Olivia Rodrigo": [("you seem pretty sad for a girl so in love", 394.7)],
-    "Ariana Grande":  [("Petal", 236.1)],
-    "BTS":            [("Arirang", 525.6)],
-}
+RELEASES_2026 = {}   # the 2026 releases are now rows in the data, so nothing is listed here
 
 
 def artist_prior(artist, before_year=None, late_2026=False):
@@ -681,10 +680,9 @@ st.markdown(
 st.markdown(f"""
 <p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
 Estimate how many first-week Spotify streams a major album will get, based on the artist's track record, the number of tracks and guest features, and how much notice fans were given.
-First-week streams are driven by consumer demand, marketing strategy, and chance, which makes them inherently hard to predict. This model beat a simple guess on past albums but not on 2026 releases, so <b>use it as a starting point, not a precise number.</b>
+First-week streams are driven by consumer demand, marketing strategy, and chance, which makes them inherently hard to predict. This model beat a simple guess on past albums but had only a small edge on 2026 releases, so <b>use it as a starting point, not a precise number.</b>
 </p>
-<p style="font-size:11px; color:#666; margin:0 0 4px;">Built with a Ridge regression model trained on {N_TRAIN} albums from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}.</p>
-<p style="font-size:11px; color:#666; margin:0 0 18px;">⚠️ Best suited for major, established artists with a track record on Spotify.</p>
+<p style="font-size:11px; color:#666; margin:0 0 18px;">Built with a Ridge regression model trained on {N_TRAIN} albums from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX} &middot; ⚠️ Best suited for major, established artists with a track record on Spotify.</p>
 """, unsafe_allow_html=True)
 
 artists = sorted(df['artist'].unique().tolist())
@@ -1074,7 +1072,8 @@ st.markdown(
     f"<p style='font-size:13px; color:#d0d0d0; margin:14px 0 0 0; line-height:1.6;'>"
     f"<b>Newest test:</b> on {len(_v_err)} albums from 2026 that were never used to build or tune the model, "
     f"the typical miss was <b>{np.median(_v_err):.0f}%</b>, against {np.median(_v_base):.0f}% for always guessing the "
-    f"middle album. That is no better than the plain guess, so the earlier figures above are likely too "
+    f"middle album, and the average miss was {np.mean(_v_err):.0f}% against {np.mean(_v_base):.0f}%. That is only a small "
+    f"edge on typical error and none on average error, so the earlier figures above are likely too "
     f"optimistic. Details are under the 2026 track record below.</p>",
     unsafe_allow_html=True)
 
@@ -1211,7 +1210,7 @@ Surprise drops with no warning are also hard for it.
 **The honest summary:** in testing on past albums, the typical miss is {state['model_med']:.0f}%, against
 {state['base_med']:.0f}% for always guessing the middle. On the {N_HOLD} albums from 2025 it is {HOLD_MED:.0f}%
 against {BASE_HOLD_MED:.0f}%. But on the {N_VAL} 2026 albums, which were never used to build or tune the
-model, it did no better than the plain guess (see the 2026 track record). Treat its output as a rough
+model, its edge over the plain guess mostly disappeared (see the 2026 track record). Treat its output as a rough
 ballpark, not a precise forecast.
     """)
 
