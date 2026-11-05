@@ -50,7 +50,7 @@ st.markdown("""
        higher specificity, so this needs the element selector and !important to win. */
     .stApp h1.app-title, h1.app-title {
         font-family: 'Montserrat', 'Source Sans Pro', -apple-system, sans-serif !important;
-        font-size: clamp(2.5rem, 5.6vw, 5.4rem) !important;
+        font-size: clamp(2.2rem, 4.8vw, 4.6rem) !important;
         font-weight: 900 !important;
         line-height: 1.06 !important;
         letter-spacing: -0.03em !important;
@@ -152,14 +152,14 @@ st.markdown("""
         border: none;
         color: #0e1117;
         border-radius: 999px;
-        min-height: 66px;
-        padding: 18px 30px;
+        min-height: 72px;
+        padding: 20px 30px;
         letter-spacing: 0.03em;
         box-shadow: 0 0 20px #1db95433;
         transition: all 0.2s ease;
     }
     .stButton button[kind="primary"] p {
-        font-size: 20px !important;
+        font-size: 22px !important;
         font-weight: 800 !important;
     }
     .stButton button[kind="primary"]:hover {
@@ -800,11 +800,11 @@ st.markdown(
 
 st.markdown(f"""
 <p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
-Estimates first-week Spotify streams for major albums, using:</p>
+Welcome! Get an estimate of a major album's first-week Spotify streams by picking an artist and entering the album's details. The estimate is built from:</p>
 <ul style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 8px; padding-left:22px;">
-<li>the artist's track record</li>
+<li>the artist's past album performance</li>
 <li>track count and guest features</li>
-<li>how much notice fans got</li>
+<li>how far ahead the album was announced</li>
 </ul>
 <p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
 First-week streams are driven by consumer demand, marketing strategy, and chance, which makes them inherently hard to predict, so <b>use this as a starting point, not a precise number.</b>
