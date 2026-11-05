@@ -252,7 +252,7 @@ Sabrina Carpenter,MansBestFriend,2025,13,715,79,0,1,352,297,0
 Kendrick Lamar,DAMN,2017,14,120,3,3,2,0,227,1
 Kendrick Lamar,MrMorale,2022,19,489,25,7,5,227,343,1
 Kendrick Lamar,GNX,2024,12,640,0,4,2,343,363,1
-LilWayne,CarterV,2018,23,207,2,10,7,0,226.9,0
+Lil Wayne,CarterV,2018,23,207,2,10,7,0,226.9,0
 Olivia Rodrigo,SOUR,2021,11,365,50,0,0,0,385,1
 Olivia Rodrigo,GUTS,2023,12,574,74,0,2,385,284,1
 Beyonce,Renaissance,2022,16,489,43,2,6,0,173,1
@@ -473,6 +473,16 @@ HOLDOUT_MAPE = float(np.mean([r['err'] for r in state['hold_results']])) if N_HO
 # display-only prev-streams for artists whose earlier album has real numbers but is not a
 # training row. Never fed into the model. Both are collaborations or projects deliberately
 # left out of the dataset.
+# Year of each artist's most recent studio album, for artists whose newer album is not in the data
+# (checked against Spotify discographies, Nov 2026). Used only for "years since last album";
+# the history streams still come from the albums in the data.
+LATEST_STUDIO_YEAR = {
+    "21 Savage": 2025, "Anuel AA": 2022, "Daddy Yankee": 2026, "Ed Sheeran": 2025,
+    "Future": 2026, "J Balvin": 2024, "Twenty One Pilots": 2025, "Khalid": 2024,
+    "Lil Baby": 2025, "Lil Uzi Vert": 2024, "Lil Wayne": 2025,
+}
+
+
 REFERENCE_HISTORY = {
     "21 Savage":          {"year": 2020, "streams": 108},  # Savage Mode II (collab w/ Metro, kept out)
     "Metro Boomin":       {"year": 2022, "streams": 226.2},  # Heroes & Villains (solo album, kept out; verified 226,156,391)
@@ -553,6 +563,11 @@ def latest_release_year(artist, before_year=None, late_2026=False):
         ref_year = REFERENCE_HISTORY[artist]['year']
         if (before_year is None or ref_year < before_year) and (year is None or ref_year > year):
             year = ref_year
+    if artist in LATEST_STUDIO_YEAR:
+        y = LATEST_STUDIO_YEAR[artist]
+        if (before_year is None or y < before_year or (late_2026 and before_year == 2026 and y == 2026)) \
+                and (year is None or y > year):
+            year = y
     return year
 
 
@@ -798,6 +813,9 @@ is_household = st.toggle(
 # so a prediction for an earlier period uses the gap as it stood back then.
 most_recent_year = latest_release_year(artist_name, before_year=release_year, late_2026=late_2026)
 years_auto = max(0, int(release_year - most_recent_year)) if most_recent_year else 0
+_data_year = artist_prior(artist_name, release_year, late_2026)
+_data_year = int(_data_year.iloc[-1]['year']) if len(_data_year) else None
+newer_album_note = (most_recent_year is not None and _data_year is not None and most_recent_year > _data_year)
 
 hist = artist_history(artist_name, mau, before_year=release_year, late_2026=late_2026)
 hist['is_household_name'] = int(is_household)
@@ -808,9 +826,13 @@ prev_auto = int(round(hist['prev_streams_per_mau'] * _scale)) if hist['has_hist'
 # artist who has released something since (or a joint album, EP or mixtape the data leaves out).
 with st.expander("Is this artist's history out of date? Edit it here (optional)"):
     st.caption(f"The app found: last album {years_auto} year(s) before this release, and it opened with "
-               f"{prev_auto}M first-week streams. If the artist has put out a studio album since that the "
-               "app does not know about, fix both numbers. Enter 0 streams for a debut or if you do not "
-               "know the number.")
+               f"{prev_auto}M first-week streams. If the artist has released a studio album since then that "
+               "the app does not know about, correct both numbers. Enter 0 streams for a debut, or if you "
+               "do not know the number.")
+    if newer_album_note:
+        st.caption(f"Note: this artist released a newer studio album ({most_recent_year}) that is not in the "
+                   f"data, so the years above reflect it but the previous-album streams come from their "
+                   f"{_data_year} album. Enter the newer album's streams below if you know them.")
     _c1, _c2 = st.columns(2)
     years_since_last = _c1.number_input(
         "Years since their last studio album", min_value=0, value=years_auto, step=1,
@@ -1100,7 +1122,7 @@ st.markdown(f"""
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🔧</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Planned next: testing every new 2026 and 2027 release as a fresh check, adding more albums from newer and smaller artists, better handling of surprise releases and fading artists, using early signals like the lead single, and filling in missing previous-album numbers.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Planned next: testing each new release as a fresh check, adding more albums and newer artists, handling surprise drops and fading artists better, using early signals like the lead single, and filling data gaps.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
