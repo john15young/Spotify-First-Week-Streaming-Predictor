@@ -109,6 +109,22 @@ st.markdown("""
         box-shadow: 0 0 24px #1db95422;
     }
 
+
+    /* Share / download pills: identical size and colour */
+    a.pill-btn, .stDownloadButton button {
+        display: flex; align-items: center; justify-content: center;
+        box-sizing: border-box; width: 100%; height: 46px; min-height: 46px;
+        margin: 10px 0 0 0; padding: 0 18px; border-radius: 23px;
+        background: #13161d; color: #ffffff !important; border: 1px solid #2f3541;
+        font-size: 14px; font-weight: 600; text-decoration: none !important;
+    }
+    a.pill-btn:hover, .stDownloadButton button:hover { border-color: #1DB954; color: #ffffff !important; }
+    .stDownloadButton { margin-top: 0; }
+    .stDownloadButton button p { font-size: 14px; font-weight: 600; }
+
+    /* Input labels: a bit larger so they stand out */
+    [data-testid="stWidgetLabel"] p { font-size: 16px; font-weight: 600; color: #f2f2f2; }
+
     /* Section divider label */
     .section-divider {
         display: flex;
@@ -647,13 +663,20 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
     def load_font(bold, size):
         candidates = [
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+            "/System/Library/Fonts/Supplemental/Arial Bold.ttf" if bold else "/System/Library/Fonts/Supplemental/Arial.ttf",
+            "DejaVuSans-Bold.ttf" if bold else "DejaVuSans.ttf",
         ]
         for path in candidates:
             try:
                 return ImageFont.truetype(path, size)
             except Exception:
                 continue
-        return ImageFont.load_default()
+        try:
+            # Pillow 10.1+ ships a scalable built-in font, so text keeps its size on any server.
+            return ImageFont.load_default(size)
+        except Exception:
+            return ImageFont.load_default()
 
     font_label = load_font(False, 30)
     font_artist = load_font(True, 44)
@@ -667,7 +690,10 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
 
     title = f"{artist_name}" + (f": {album_name}" if album_name else "")
     draw.text((70, 70), "First-Week Stream Prediction", font=font_label, fill=(179, 179, 179))
-    draw.text((70, 120), title, font=font_artist, fill=(255, 255, 255))
+    size = 44
+    while size > 24 and draw.textlength(title, font=load_font(True, size)) > W - 140:
+        size -= 2
+    draw.text((70, 120), title, font=load_font(True, size), fill=(255, 255, 255))
 
     draw.text((70, 260), f"{pred:.0f}M", font=font_big, fill=green)
     draw.text((70, 410), "predicted first-week global streams", font=font_range, fill=(179, 179, 179))
@@ -746,14 +772,15 @@ with p_col:
              "It also limits the artist's history to albums released before then.")
 with m_col:
     mau = st.number_input(
-        "Spotify MAU at release (millions)", min_value=1,
+        "Spotify monthly active users at release (millions)", min_value=1,
         value=MAU_BY_PERIOD[release_period], step=1, key=f"mau_{release_period}",
-        help="Auto-filled from the release period. Override it to model a future period Spotify has "
-             "not reported yet.")
+        help="MAU means monthly active users, the number of people who used Spotify in the past "
+             "month. It sets how big the platform was at release, since bigger platforms mean more "
+             "streams. Auto-filled from the release period; edit it only to model a future period.")
 
 release_year = int(release_period.split()[0])
 late_2026 = release_period.startswith('2026 (Jul')   # albums already out in 2026 count as history
-mau_basis = f"{mau}M MAU, {release_period}"
+mau_basis = f"{mau}M monthly active users, {release_period}"
 if mau != MAU_BY_PERIOD[release_period]:
     st.caption(f"Using a manual override of {mau}M. {release_period} reported "
                f"{MAU_BY_PERIOD[release_period]}M.")
@@ -977,10 +1004,7 @@ with prediction_slot:
         share_col1, share_col2, _ = st.columns([1, 1, 2])
         with share_col1:
             st.markdown(
-                f'<a href="{tweet_url}" target="_blank" style="display:inline-block; margin-top:10px; '
-                f'background:#000; color:#fff; padding:8px 18px; border-radius:20px; '
-                f'font-weight:600; font-size:13px; text-decoration:none; border:1px solid #333; width:100%; text-align:center; box-sizing:border-box;">'
-                f'Share on X &nbsp;𝕏</a>',
+                f'<a class="pill-btn" href="{tweet_url}" target="_blank">Share Prediction on X</a>',
                 unsafe_allow_html=True
             )
         with share_col2:
@@ -988,7 +1012,7 @@ with prediction_slot:
                 img_buf = generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt,
                                                basis_note=f"Based on {mau_basis}")
                 st.download_button(
-                    "Download image 🖼️",
+                    "Download Prediction",
                     data=img_buf,
                     file_name=f"{artist_name.replace(' ', '_')}_prediction.png",
                     mime="image/png",
@@ -1112,17 +1136,17 @@ st.markdown(f"""
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">📊</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">What it does</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for major album releases, using a Ridge regression trained on {N_TRAIN} albums ({TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX}). Predicted ahead of three summer 2026 releases, two of which landed within 7%.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Predicts global first-week Spotify streams for major album releases. An earlier version forecasted three summer 2026 releases ahead of launch, and two landed within 7%.</p>
     </div>
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🎯</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">How to use it</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, pick the release period, and hit Predict. Artist streaming history is auto-filled, so you only need to supply the album-specific inputs like track count and lead time.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Select an artist, pick the release period, and hit Predict. Their history is filled in for you, so you only add details like track count and lead time.</p>
     </div>
     <div style="background:#13161d; border:1px solid #22262f; border-radius:12px; padding:16px 18px;">
         <div style="font-size:22px; margin-bottom:8px;">🔧</div>
         <p style="font-size:13px; font-weight:600; color:#fff; margin:0 0 6px;">Always improving</p>
-        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Planned next: testing each new release as a fresh check, adding more albums and newer artists, handling surprise drops and fading artists better, using early signals like the lead single, and filling data gaps.</p>
+        <p style="font-size:12px; color:#b3b3b3; margin:0; line-height:1.6;">Planned next: checking the model against each new release as it comes out, adding more albums and album history, tracking monthly listeners going forward, and improving the app design.</p>
     </div>
 </div>
 """, unsafe_allow_html=True)
