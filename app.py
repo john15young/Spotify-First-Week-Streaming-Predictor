@@ -50,7 +50,7 @@ st.markdown("""
        higher specificity, so this needs the element selector and !important to win. */
     .stApp h1.app-title, h1.app-title {
         font-family: 'Montserrat', 'Source Sans Pro', -apple-system, sans-serif !important;
-        font-size: clamp(2.1rem, 4.7vw, 4.5rem) !important;
+        font-size: clamp(2.5rem, 5.6vw, 5.4rem) !important;
         font-weight: 900 !important;
         line-height: 1.06 !important;
         letter-spacing: -0.03em !important;
@@ -152,14 +152,14 @@ st.markdown("""
         border: none;
         color: #0e1117;
         border-radius: 999px;
-        min-height: 76px;
-        padding: 22px 34px;
+        min-height: 66px;
+        padding: 18px 30px;
         letter-spacing: 0.03em;
         box-shadow: 0 0 20px #1db95433;
         transition: all 0.2s ease;
     }
     .stButton button[kind="primary"] p {
-        font-size: 22px !important;
+        font-size: 20px !important;
         font-weight: 800 !important;
     }
     .stButton button[kind="primary"]:hover {
@@ -653,15 +653,17 @@ def compute_contribution_breakdown(params):
 
 
 def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_note="",
-                         typ=None, per_track=None, per_day=None):
+                         typ=None, per_track=None, per_day=None, summary=None):
     """Builds a shareable PNG that mirrors the result card on the page. Drawn at 2x so it stays
     sharp when zoomed or shared."""
     import numpy as np
-    S = 2
-    W, H = 1200 * S, 675 * S
+    S = 3
+    W, H = 1200 * S, (820 if summary else 675) * S
     bg, green = (14, 17, 23), (29, 185, 84)
     img = Image.new("RGB", (W, H), bg)
     draw = ImageDraw.Draw(img)
+
+    fallback = {"used": False}
 
     def load_font(bold, size):
         size = int(size * S)
@@ -676,22 +678,29 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
                 return ImageFont.truetype(path, size)
             except Exception:
                 continue
+        fallback["used"] = True
         try:
             # Pillow 10.1+ ships a scalable built-in font, so text keeps its size on any server.
             return ImageFont.load_default(size)
         except Exception:
             return ImageFont.load_default()
 
+    def put(xy, text, bold, size, fill):
+        """Draws text; when only the regular built-in font is available, fakes bold with a thin stroke."""
+        font = load_font(bold, size)
+        stroke = max(1, int(size * S * 0.028)) if (bold and fallback["used"]) else 0
+        draw.text(xy, text, font=font, fill=fill, stroke_width=stroke, stroke_fill=fill)
+
     grey, dim = (179, 179, 179), (122, 122, 122)
     x0 = 60 * S
 
     # Header: what this is, then the artist and album
     title = f"{artist_name}" + (f": {album_name}" if album_name else "")
-    draw.text((x0, 40 * S), "First-Week Stream Prediction", font=load_font(False, 24), fill=grey)
+    put((x0, 40 * S), "First-Week Stream Prediction", False, 24, grey)
     size = 42
     while size > 24 and draw.textlength(title, font=load_font(True, size)) > W - 2 * x0:
         size -= 2
-    draw.text((x0, 76 * S), title, font=load_font(True, size), fill=(255, 255, 255))
+    put((x0, 76 * S), title, True, size, (255, 255, 255))
 
     # Result card with the same dark-green gradient and green border as the page
     cx0, cy0, cx1, cy1 = x0, 150 * S, W - x0, 410 * S
@@ -708,12 +717,12 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
     draw.rounded_rectangle([cx0, cy0, cx1 - 1, cy1 - 1], radius=28 * S, outline=green, width=2 * S)
 
     px = cx0 + 36 * S
-    draw.text((px, cy0 + 28 * S), "Predicted first-week global streams", font=load_font(False, 24), fill=grey)
-    draw.text((px, cy0 + 64 * S), f"{pred:.0f}M", font=load_font(True, 96), fill=green)
+    put((px, cy0 + 28 * S), "Predicted first-week global streams", False, 24, grey)
+    put((px, cy0 + 64 * S), f"{pred:.0f}M", True, 96, green)
     rng = f"Typical range (\u00b1{typ:.0f}%): {lo_fmt} to {hi_fmt}" if typ is not None else f"Typical range: {lo_fmt} to {hi_fmt}"
-    draw.text((px, cy0 + 176 * S), rng, font=load_font(False, 26), fill=(208, 208, 208))
+    put((px, cy0 + 176 * S), rng, False, 26, (208, 208, 208))
     if basis_note:
-        draw.text((px, cy0 + 216 * S), basis_note, font=load_font(False, 20), fill=dim)
+        put((px, cy0 + 216 * S), basis_note, False, 20, dim)
 
     # Three small stat cards, like the row under the result on the page
     stats = []
@@ -730,13 +739,52 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
         for k, (lab, val) in enumerate(stats):
             bx0 = x0 + k * (bw + gap)
             draw.rounded_rectangle([bx0, by0, bx0 + bw, by1], radius=16 * S, fill=(19, 22, 29), outline=(34, 38, 47), width=S)
-            draw.text((bx0 + 24 * S, by0 + 20 * S), lab, font=load_font(False, 22), fill=grey)
-            draw.text((bx0 + 24 * S, by0 + 56 * S), val, font=load_font(False, 44), fill=green)
+            put((bx0 + 24 * S, by0 + 20 * S), lab, False, 22, grey)
+            put((bx0 + 24 * S, by0 + 56 * S), val, True, 44, green)
 
-    draw.text((x0, 612 * S), "spotify-first-week-streaming-predictor.streamlit.app", font=load_font(False, 22), fill=(102, 102, 102))
+    url_y = 612
+    if summary:
+        # Written explanation under the stat cards; numbers in green like on the page
+        f_txt, f_bold = load_font(False, 22), load_font(True, 22)
+        words, glue = [], False
+        for text, hl in summary:
+            parts = text.split(" ")
+            for i, p in enumerate(parts):
+                if p == "":
+                    glue = False
+                    continue
+                if i == 0 and glue and words:
+                    words[-1].append((p, hl))
+                else:
+                    words.append([(p, hl)])
+                glue = True
+            glue = not text.endswith(" ")
+        lines, cur, curw = [], [], 0
+        maxw = W - 2 * x0
+        space = draw.textlength(" ", font=f_txt)
+        for runs in words:
+            ww = sum(draw.textlength(t, font=f_bold if h else f_txt) for t, h in runs)
+            if cur and curw + space + ww > maxw:
+                lines.append(cur); cur, curw = [], 0
+            curw += (space if cur else 0) + ww
+            cur.append((runs, ww))
+        if cur:
+            lines.append(cur)
+        ty = 585 * S
+        for line in lines:
+            tx = x0
+            for runs, ww in line:
+                rx = tx
+                for t, h in runs:
+                    put((rx, ty), t, h, 22, green if h else (224, 224, 224))
+                    rx += draw.textlength(t, font=f_bold if h else f_txt)
+                tx += ww + space
+            ty += 34 * S
+        url_y = int(ty / S) + 14
+    put((x0, url_y * S), "spotify-first-week-streaming-predictor.streamlit.app", False, 22, (102, 102, 102))
 
     buf = io.BytesIO()
-    img.save(buf, format="PNG")
+    img.save(buf, format="PNG", optimize=True)
     buf.seek(0)
     return buf
 
@@ -752,8 +800,14 @@ st.markdown(
 
 st.markdown(f"""
 <p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
-Estimate how many first-week Spotify streams a major album will get, based on the artist's track record, the number of tracks and guest features, and how much notice fans were given.
-First-week streams are driven by consumer demand, marketing strategy, and chance, which makes them inherently hard to predict. This model beat a simple guess on past albums but had only a small edge on 2026 releases, so <b>use it as a starting point, not a precise number.</b>
+Estimates first-week Spotify streams for major albums, using:</p>
+<ul style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 8px; padding-left:22px;">
+<li>the artist's track record</li>
+<li>track count and guest features</li>
+<li>how much notice fans got</li>
+</ul>
+<p style="font-size:15px; color:#d0d0d0; line-height:1.7; margin:0 0 6px;">
+First-week streams are driven by consumer demand, marketing strategy, and chance, which makes them inherently hard to predict, so <b>use this as a starting point, not a precise number.</b>
 </p>
 <p style="font-size:11px; color:#666; margin:0 0 18px;">Built with a Ridge regression model trained on {N_TRAIN} albums from {TRAIN_YEAR_MIN} to {TRAIN_YEAR_MAX} &middot; ⚠️ Best suited for major, established artists with a track record on Spotify.</p>
 """, unsafe_allow_html=True)
@@ -1004,14 +1058,18 @@ with prediction_slot:
         def g(text):
             return f"<span style='color:{SPOTIFY_GREEN}; font-weight:700;'>{text}</span>"
 
+        summary_segs = [
+            ("The model expects ", None), (artist_name, "b"), (f"{album_label}'s album to stream around ", None),
+            (f"{pred:.0f}M", "g"), (" times globally in its first week, an average of ", None),
+            (f"{daily_avg:.1f}M", "g"), (" streams per day. That works out to roughly ", None),
+            (f"{pred / track_count:.1f}M", "g"), (" per track. The model's typical miss in testing was about ", None),
+            (f"{typ:.0f}%", "g"), (", which gives a range of ", None), (f"{lo_fmt} to {hi_fmt}", "g"),
+            (". About half of past albums landed outside a range this wide.", None),
+        ]
+        summary_html = "".join(
+            g(t) if k == "g" else (f"<strong>{t}</strong>" if k == "b" else t) for t, k in summary_segs)
         st.markdown(
-            f"<div style='font-size:15px; line-height:1.7; color:#e0e0e0; margin-top:12px;'>"
-            f"The model expects <strong>{artist_name}</strong>{album_label}'s album to stream around "
-            f"{g(f'{pred:.0f}M')} times globally in its first week, an average of {g(f'{daily_avg:.1f}M')} "
-            f"streams per day. That works out to roughly {g(f'{pred / track_count:.1f}M')} per track. "
-            f"The model's typical miss in testing was about {g(f'{typ:.0f}%')}, which gives a range of "
-            f"{g(f'{lo_fmt} to {hi_fmt}')}. About half of past albums landed outside a range this wide."
-            f"</div>",
+            f"<div style='font-size:15px; line-height:1.7; color:#e0e0e0; margin-top:12px;'>{summary_html}</div>",
             unsafe_allow_html=True
         )
         st.caption("Note: your prediction is session only and will not affect the model.")
@@ -1058,7 +1116,8 @@ with prediction_slot:
             try:
                 img_buf = generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt,
                                                basis_note=f"Based on {mau_basis}", typ=typ,
-                                               per_track=pred / track_count, per_day=daily_avg)
+                                               per_track=pred / track_count, per_day=daily_avg,
+                                               summary=[(t, k == 'g') for t, k in summary_segs])
                 st.download_button(
                     "Download Prediction",
                     data=img_buf,
@@ -1164,11 +1223,11 @@ _v_err = [r["err"] for r in state["val_results"]]
 _v_base = [abs(gm - r["actual"]) / r["actual"] * 100 for r in state["val_results"]]
 st.markdown(
     f"<p style='font-size:13px; color:#d0d0d0; margin:14px 0 0 0; line-height:1.6;'>"
-    f"<b>Newest test:</b> on {len(_v_err)} albums from 2026 that were never used to build or tune the model, "
-    f"the typical miss was <b>{np.median(_v_err):.0f}%</b>, against {np.median(_v_base):.0f}% for always guessing the "
-    f"middle album, and the average miss was {np.mean(_v_err):.0f}% against {np.mean(_v_base):.0f}%. That is only a small "
-    f"edge on typical error and none on average error, so the earlier figures above are likely too "
-    f"optimistic. Details are under the 2026 track record below.</p>",
+    f"<b>Newest test:</b> on {len(_v_err)} albums from 2026 that the model never saw, its typical miss was "
+    f"<b>{np.median(_v_err):.0f}%</b>, against {np.median(_v_base):.0f}% for a simple guess. A few large misses "
+    f"pushed its average miss to {np.mean(_v_err):.0f}%, against {np.mean(_v_base):.0f}% for the guess. Treat the "
+    f"typical errors in the cards above ({HOLD_MED:.0f}% on 2025 albums, {state['model_med']:.0f}% in "
+    f"cross-validation) as a best case.</p>",
     unsafe_allow_html=True)
 
 st.markdown("""
