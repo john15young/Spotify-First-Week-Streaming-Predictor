@@ -123,7 +123,7 @@ st.markdown("""
     .stDownloadButton button p { font-size: 14px; font-weight: 600; }
 
     /* Input labels: a bit larger so they stand out */
-    [data-testid="stWidgetLabel"] p { font-size: 16px; font-weight: 600; color: #f2f2f2; }
+    [data-testid="stWidgetLabel"] p { font-size: 18px; font-weight: 600; color: #f2f2f2; }
 
     /* Section divider label */
     .section-divider {
@@ -152,14 +152,14 @@ st.markdown("""
         border: none;
         color: #0e1117;
         border-radius: 999px;
-        min-height: 64px;
-        padding: 18px 30px;
+        min-height: 76px;
+        padding: 22px 34px;
         letter-spacing: 0.03em;
         box-shadow: 0 0 20px #1db95433;
         transition: all 0.2s ease;
     }
     .stButton button[kind="primary"] p {
-        font-size: 19px !important;
+        font-size: 22px !important;
         font-weight: 800 !important;
     }
     .stButton button[kind="primary"]:hover {
@@ -199,24 +199,12 @@ Harry Styles,HarryStyles,2017,10,120,29,0,0,0,66,0
 Harry Styles,FineLine,2019,12,248,39,0,2,66,155,1
 Harry Styles,HarrysHouse,2022,13,489,58,0,2,155,440,1
 Harry Styles,KissAllTheTime,2026,14,761,50,0,4,440,205,1
-Noah Kahan,TheGreatDivide,2026,17,761,86,0,4,0,231.5,0
-Kanye West,BULLY,2026,18,761,3,6,2,251,158.9,1
-Don Toliver,OCTANE,2026,18,761,8,5,2,0,162.5,0
-J Cole,TheFallOff,2026,24,761,23,7,5,207.1,139.1,1
-Bruno Mars,TheRomantic,2026,9,761,51,0,5,0,144.0,1
-A$AP Rocky,DontBeDumb,2026,15,761,27,6,8,0,129.7,0
-Zach Bryan,WithHeavenOnTop,2026,25,761,175,0,2,98.5,98.1,0
-Ella Langley,Dandelion,2026,18,761,73,1,2,0,88.4,0
-Karol G,NoMeArrepiento,2026,14,788,9,4,1,136.2,76.4,1
-Olivia Rodrigo,YSPSFAGSIL,2026,13,761,71,1,3,284,394.7,1
-Drake,Iceman,2026,18,761,24,2,3,405,450.4,1
-BTS,Arirang,2026,14,761,74,0,6,153.8,525.6,1
-Ariana Grande,Petal,2026,12,788,94,0,2,342,236.1,1
 Ariana Grande,DangerousWoman,2016,15,100,71,4,2,0,53.6,1
 Ariana Grande,Sweetener,2018,15,207,58,2,2,53.6,174,1
 Ariana Grande,ThanksUNext,2019,12,248,17,0,1,174,361,1
 Ariana Grande,Positions,2020,14,299,7,3,1,361,216.7,1
 Ariana Grande,EternalSunshine,2024,13,640,51,0,4,216.7,342,1
+Ariana Grande,Petal,2026,12,788,94,0,2,342,236.1,1
 Taylor Swift,Lover,2019,18,248,71,2,2,0,257.1,1
 Taylor Swift,Folklore,2020,16,299,1,1,1,257.1,329,1
 Taylor Swift,Evermore,2020,15,299,1,3,0,329,254,1
@@ -248,6 +236,7 @@ Ed Sheeran,Equals,2021,14,365,71,0,4,375,161,1
 Drake,Scorpion,2018,25,207,16,3,1,290.2,559,1
 Drake,CLB,2021,21,365,7,12,3,559,496,1
 Drake,FATD,2023,23,574,14,10,2,496,405,1
+Drake,Iceman,2026,18,761,24,2,3,405,450.4,1
 Travis Scott,ASTROWORLD,2018,17,207,4,11,3,0,257,0
 Travis Scott,Utopia,2023,19,574,6,13,5,257,457,0
 Eminem,Revival,2017,19,120,17,8,4,10,117,1
@@ -271,6 +260,7 @@ Kendrick Lamar,GNX,2024,12,640,0,4,2,343,363,1
 Lil Wayne,CarterV,2018,23,207,2,10,7,0,226.9,0
 Olivia Rodrigo,SOUR,2021,11,365,50,0,0,0,385,1
 Olivia Rodrigo,GUTS,2023,12,574,74,0,2,385,284,1
+Olivia Rodrigo,YSPSFAGSIL,2026,13,761,71,1,3,284,394.7,1
 Beyonce,Renaissance,2022,16,489,43,2,6,0,173,1
 Beyonce,CowboyCarter,2024,27,640,47,11,2,173,316,1
 Dua Lipa,FutureNostalgia,2020,13,299,58,2,4,0,148.9,0
@@ -279,11 +269,13 @@ Adele,30,2021,12,365,37,0,6,0,310,1
 Karol G,KG0516,2021,16,365,9,10,2,0,54.9,0
 Karol G,MananaSeraBonito,2023,17,574,14,10,2,54.9,203,0
 Karol G,Tropicoqueta,2025,20,715,10,6,2,203,136.2,0
+Karol G,NoMeArrepiento,2026,14,788,9,4,1,136.2,76.4,1
 21 Savage,IAmGreaterThanIWas,2018,15,207,10,8,1,0,88.6,0
 21 Savage,AmericanDream,2024,15,640,3,10,2,381.7,187,0
 Kanye West,JesusIsKing,2019,11,248,57,5,1,141.0,174.3,1
 Kanye West,DONDA,2021,27,365,23,23,2,174.3,442,1
 Kanye West,VULTURES1,2024,15,640,24,0,3,442,251,1
+Kanye West,BULLY,2026,18,761,3,6,2,251,158.9,1
 Tate McRae,ThinkLater,2023,14,574,32,0,2,0,115,0
 Tate McRae,SoCloseToWhat,2025,16,715,99,2,2,115,188,0
 Morgan Wallen,Dangerous,2021,30,365,58,2,3,0,161,0
@@ -297,13 +289,16 @@ Lady Gaga,Mayhem,2025,14,715,39,2,5,173,216.08,1
 Future,INeverLikedYou,2022,16,489,4,6,2,0,118.6,0
 Zach Bryan,ZachBryan,2023,16,574,16,4,1,0,145.5,0
 Zach Bryan,TheGreatAmericanBarScene,2024,19,640,14,5,1,145.5,98.5,0
+Zach Bryan,WithHeavenOnTop,2026,25,761,175,0,2,98.5,98.1,0
 Khalid,FreeSpirit,2019,17,248,36,4,1,0,142.5,0
 BTS,LoveYourselfTear,2018,11,207,32,1,0,0,72.3,1
 BTS,MapOfTheSoul7,2020,20,299,45,2,1,98.1,144.4,1
 BTS,BE,2020,8,299,53,0,0,144.4,153.8,1
+BTS,Arirang,2026,14,761,74,0,6,153.8,525.6,1
 Olivia Dean,TheArtOfLoving,2025,12,715,116,0,2,0,97,0
 J Cole,KOD,2018,12,207,4,0,2,0,190,0
 J Cole,TheOffSeason,2021,12,365,10,5,3,190,207.1,0
+J Cole,TheFallOff,2026,24,761,23,7,5,207.1,139.1,1
 Rosalia,LUX,2025,18,715,18,5,3,79.0,182.9,0
 J Balvin,Jose,2021,24,365,28,14,1,102.0,85.5,1
 Gunna,DS4EVER,2022,19,489,6,11,2,0,85.8,0
@@ -319,7 +314,12 @@ Addison Rae,Addison,2025,12,715,44,0,2,0,63.8,0
 Alex Warren,YoullBeAlrightKid,2025,21,715,45,2,1,0,133.8,0
 Jennie,Ruby,2025,15,715,45,5,0,0,148.6,0
 Sleep Token,EvenInArcadia,2025,10,715,57,0,2,0,82,0
-Doja Cat,Vie,2025,15,715,43,1,2,124.5,56,0"""
+Doja Cat,Vie,2025,15,715,43,1,2,124.5,56,0
+Noah Kahan,TheGreatDivide,2026,17,761,86,0,4,0,231.5,0
+Don Toliver,OCTANE,2026,18,761,8,5,2,0,162.5,0
+Bruno Mars,TheRomantic,2026,9,761,51,0,5,0,144.0,1
+A$AP Rocky,DontBeDumb,2026,15,761,27,6,8,0,129.7,0
+Ella Langley,Dandelion,2026,18,761,73,1,2,0,88.4,0"""
 
 # hype_score was dropped: it was scored retrospectively, after the albums' results were
 # known, so it carried hindsight that cross-validation cannot detect (the leak lives inside
@@ -652,15 +652,19 @@ def compute_contribution_breakdown(params):
     return out
 
 
-def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_note=""):
-    """Builds a shareable PNG summary card using PIL, styled to match the app theme."""
-    W, H = 1200, 675
-    bg = (14, 17, 23)
-    green = (29, 185, 84)
+def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_note="",
+                         typ=None, per_track=None, per_day=None):
+    """Builds a shareable PNG that mirrors the result card on the page. Drawn at 2x so it stays
+    sharp when zoomed or shared."""
+    import numpy as np
+    S = 2
+    W, H = 1200 * S, 675 * S
+    bg, green = (14, 17, 23), (29, 185, 84)
     img = Image.new("RGB", (W, H), bg)
     draw = ImageDraw.Draw(img)
 
     def load_font(bold, size):
+        size = int(size * S)
         candidates = [
             "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
@@ -678,30 +682,58 @@ def generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt, basis_no
         except Exception:
             return ImageFont.load_default()
 
-    font_label = load_font(False, 30)
-    font_artist = load_font(True, 44)
-    font_big = load_font(True, 130)
-    font_range = load_font(False, 30)
-    font_basis = load_font(False, 25)
-    font_footer = load_font(False, 24)
+    grey, dim = (179, 179, 179), (122, 122, 122)
+    x0 = 60 * S
 
-    # Accent border
-    draw.rectangle([(0, 0), (W - 1, H - 1)], outline=green, width=6)
-
+    # Header: what this is, then the artist and album
     title = f"{artist_name}" + (f": {album_name}" if album_name else "")
-    draw.text((70, 70), "First-Week Stream Prediction", font=font_label, fill=(179, 179, 179))
-    size = 44
-    while size > 24 and draw.textlength(title, font=load_font(True, size)) > W - 140:
+    draw.text((x0, 40 * S), "First-Week Stream Prediction", font=load_font(False, 24), fill=grey)
+    size = 42
+    while size > 24 and draw.textlength(title, font=load_font(True, size)) > W - 2 * x0:
         size -= 2
-    draw.text((70, 120), title, font=load_font(True, size), fill=(255, 255, 255))
+    draw.text((x0, 76 * S), title, font=load_font(True, size), fill=(255, 255, 255))
 
-    draw.text((70, 260), f"{pred:.0f}M", font=font_big, fill=green)
-    draw.text((70, 410), "predicted first-week global streams", font=font_range, fill=(179, 179, 179))
-    draw.text((70, 460), f"Typical range: {lo_fmt} to {hi_fmt}", font=font_range, fill=(179, 179, 179))
+    # Result card with the same dark-green gradient and green border as the page
+    cx0, cy0, cx1, cy1 = x0, 150 * S, W - x0, 410 * S
+    cw, ch = cx1 - cx0, cy1 - cy0
+    yy, xx = np.mgrid[0:ch, 0:cw]
+    t = 0.35 * xx / cw + 0.65 * yy / ch
+    c1, c2, c3 = np.array([13, 42, 24]), np.array([17, 24, 32]), np.array([14, 17, 23])
+    t3 = t[..., None]
+    grad = np.where(t3 < 0.6, c1 + (c2 - c1) * (t3 / 0.6), c2 + (c3 - c2) * ((t3 - 0.6) / 0.4))
+    card = Image.fromarray(grad.astype("uint8"), "RGB")
+    mask = Image.new("L", (cw, ch), 0)
+    ImageDraw.Draw(mask).rounded_rectangle([0, 0, cw - 1, ch - 1], radius=28 * S, fill=255)
+    img.paste(card, (cx0, cy0), mask)
+    draw.rounded_rectangle([cx0, cy0, cx1 - 1, cy1 - 1], radius=28 * S, outline=green, width=2 * S)
+
+    px = cx0 + 36 * S
+    draw.text((px, cy0 + 28 * S), "Predicted first-week global streams", font=load_font(False, 24), fill=grey)
+    draw.text((px, cy0 + 64 * S), f"{pred:.0f}M", font=load_font(True, 96), fill=green)
+    rng = f"Typical range (\u00b1{typ:.0f}%): {lo_fmt} to {hi_fmt}" if typ is not None else f"Typical range: {lo_fmt} to {hi_fmt}"
+    draw.text((px, cy0 + 176 * S), rng, font=load_font(False, 26), fill=(208, 208, 208))
     if basis_note:
-        draw.text((70, 510), basis_note, font=font_basis, fill=(122, 122, 122))
+        draw.text((px, cy0 + 216 * S), basis_note, font=load_font(False, 20), fill=dim)
 
-    draw.text((70, H - 70), "spotify-first-week-streaming-predictor.streamlit.app", font=font_footer, fill=(102, 102, 102))
+    # Three small stat cards, like the row under the result on the page
+    stats = []
+    if per_track is not None:
+        stats.append(("Streams per track", f"{per_track:.1f}M"))
+    if per_day is not None:
+        stats.append(("Avg. streams per day", f"{per_day:.1f}M"))
+    if typ is not None:
+        stats.append(("Typical error", f"\u00b1{typ:.0f}%"))
+    if stats:
+        gap = 18 * S
+        bw = (W - 2 * x0 - gap * (len(stats) - 1)) // len(stats)
+        by0, by1 = 440 * S, 560 * S
+        for k, (lab, val) in enumerate(stats):
+            bx0 = x0 + k * (bw + gap)
+            draw.rounded_rectangle([bx0, by0, bx0 + bw, by1], radius=16 * S, fill=(19, 22, 29), outline=(34, 38, 47), width=S)
+            draw.text((bx0 + 24 * S, by0 + 20 * S), lab, font=load_font(False, 22), fill=grey)
+            draw.text((bx0 + 24 * S, by0 + 56 * S), val, font=load_font(False, 44), fill=green)
+
+    draw.text((x0, 612 * S), "spotify-first-week-streaming-predictor.streamlit.app", font=load_font(False, 22), fill=(102, 102, 102))
 
     buf = io.BytesIO()
     img.save(buf, format="PNG")
@@ -737,8 +769,8 @@ st.markdown("""
 <div class="section-divider">
     <div class="section-divider-line"></div>
     <div style="text-align:center;">
-        <div class="section-divider-label" style="font-size:clamp(22px, 5vw, 34px); letter-spacing:0.14em; line-height:1.15; white-space:normal;">Make a prediction</div>
-        <div style="font-size:clamp(13px, 2.4vw, 16px); color:#d0d0d0; margin-top:8px;">Fill in album details below to generate a first-week stream estimate</div>
+        <div class="section-divider-label" style="font-size:clamp(28px, 6vw, 44px); letter-spacing:0.14em; line-height:1.15; white-space:normal;">Make a prediction!</div>
+        <div style="font-size:clamp(15px, 2.8vw, 19px); color:#d0d0d0; margin-top:10px;">Fill in album details below to generate a first-week stream estimate</div>
     </div>
     <div class="section-divider-line" style="background: linear-gradient(90deg, transparent, #1DB95488);"></div>
 </div>
@@ -747,7 +779,7 @@ st.markdown("""
 # -----------------------------------------------------------------------------
 # Album details (full width)
 # -----------------------------------------------------------------------------
-st.markdown("<p style='font-size:24px; font-weight:700; margin:38px 0 18px 0;'>Album Details</p>",
+st.markdown("<p style='font-size:30px; font-weight:700; margin:38px 0 18px 0;'>Album Details</p>",
             unsafe_allow_html=True)
 
 a_col, name_col = st.columns(2)
@@ -772,7 +804,7 @@ with p_col:
              "It also limits the artist's history to albums released before then.")
 with m_col:
     mau = st.number_input(
-        "Spotify monthly active users at release (millions)", min_value=1,
+        "Spotify monthly active users (millions)", min_value=1,
         value=MAU_BY_PERIOD[release_period], step=1, key=f"mau_{release_period}",
         help="MAU means monthly active users, the number of people who used Spotify in the past "
              "month. It sets how big the platform was at release, since bigger platforms mean more "
@@ -881,10 +913,27 @@ if prev_override != prev_auto:
 if years_since_last != years_auto or prev_override != prev_auto:
     st.caption("Using your overridden history values.")
 
-with st.expander("History used by the model (dataset medians used if no history)"):
-    st.write(f"Previous release first-week streams: **{hist['prev_streams_per_mau'] * _scale:.0f}M**")
-    st.write(f"Career average first-week streams: **{hist['trailing_avg_per_mau'] * _scale:.0f}M**")
-    st.write(f"Combined history signal used by the model: **{hist['history_per_mau'] * _scale:.0f}M**")
+with st.expander("History used by the model (a typical album is used if there is no history)"):
+    _overridden = prev_override != prev_auto
+    _prev_val = hist['prev_streams_per_mau'] * _scale
+    _avg_val = hist['trailing_avg_per_mau'] * _scale
+    if _overridden:
+        _prev_src, _avg_src = "your override", None
+    elif len(a_hist) > 0:
+        _last = a_hist.iloc[-1]
+        _prev_src = f"{_last['album']}, {int(_last['year'])}"
+        _avg_src = f"average of {len(a_hist)} album{'s' if len(a_hist) != 1 else ''}"
+    else:
+        _prev_src = _avg_src = "no previous album on record, so a typical album is used as a stand-in"
+    st.write(f"Previous release first-week streams: **{_prev_val:.0f}M** ({_prev_src})")
+    if _avg_src is None:
+        _avg_src = ("average of the albums on record, with your override as the previous album"
+                    if len(a_hist) > 0 else "based on your override")
+    st.write(f"Career average first-week streams: **{_avg_val:.0f}M** ({_avg_src})")
+    if len(a_hist) > 0:
+        st.caption(", ".join(f"{r['album']} {r['first_week_streams']:.0f}M" for _, r in a_hist.iterrows()))
+    st.write(f"Blended history used by the model: **{hist['history_per_mau'] * _scale:.0f}M** "
+             f"(average of the two numbers above)")
 
 predict_clicked = st.button("Predict first-week streams", type="primary", use_container_width=True)
 prediction_slot = st.container()
@@ -965,8 +1014,6 @@ with prediction_slot:
             f"</div>",
             unsafe_allow_html=True
         )
-        st.caption("For reference: Drake's Iceman did 450M in its first week, Olivia Rodrigo's album did 395M, "
-                   "and Ariana Grande's Petal did 236M.")
         st.caption("Note: your prediction is session only and will not affect the model.")
 
         with st.expander("🔍 Why this number?"):
@@ -1010,7 +1057,8 @@ with prediction_slot:
         with share_col2:
             try:
                 img_buf = generate_share_image(artist_name, album_name, pred, lo_fmt, hi_fmt,
-                                               basis_note=f"Based on {mau_basis}")
+                                               basis_note=f"Based on {mau_basis}", typ=typ,
+                                               per_track=pred / track_count, per_day=daily_avg)
                 st.download_button(
                     "Download Prediction",
                     data=img_buf,
